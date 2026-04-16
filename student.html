@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iROOM Student Page - CEO Prototype</title>
+    <style>
+        body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; overflow: hidden; background-color: #f5f7fa; }
+        
+        /* 헤더 */
+        header { height: 60px; background: white; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 20px; position: fixed; width: 100%; top: 0; z-index: 10; justify-content: space-between;}
+        .logo { font-size: 1.2rem; font-weight: 800; color: #007BFF; text-decoration: none; }
+
+        /* 메인 컨텐츠 영역 (7:3 레이아웃) */
+        main { display: flex; width: 100%; height: 100%; pt: 60px; /* 헤더 높이만큼 띄움 */ }
+        
+        /* 왼쪽: 화상회의 영역 */
+        #meet-section { flex: 7; background-color: #202124; display: flex; flex-direction: column; position: relative; pt: 60px;}
+        #video-container { flex: 1; position: relative; overflow: hidden; }
+        
+        /* 실제 구글 미트 iframe을 넣을 자리 */
+        #meet-iframe { width: 100%; height: 100%; border: none; }
+        
+        .meet-controls { height: 70px; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; gap: 15px; position: absolute; bottom: 0; width: 100%; }
+        
+        /* 오른쪽: 실시간 노트 영역 */
+        #note-section { flex: 3; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; box-shadow: -2px 0 10px rgba(0,0,0,0.05); pt: 60px;}
+        .note-header { padding: 15px 20px; border-bottom: 2px solid #eee; font-weight: bold; color: #007BFF; display: flex; justify-content: space-between; align-items: center; }
+        #status { font-size: 0.8rem; color: #34a853; display: flex; align-items: center; gap: 5px; }
+        .status-dot { width: 8px; height: 8px; background: #34a853; border-radius: 50%; animation: pulse 1.5s infinite; }
+
+        #transcript-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        
+        /* 자막 아이템 스타일 */
+        .script-item { animation: fadeIn 0.5s; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
+        .original-text { font-size: 0.95rem; color: #333; font-weight: 500; }
+        .translated-text { font-size: 0.85rem; color: #666; margin-top: 4px; font-style: italic; }
+        .timestamp { font-size: 0.7rem; color: #999; margin-bottom: 2px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        .btn { padding: 8px 18px; border-radius: 20px; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.3s; }
+        .btn-primary { background: #007BFF; color: white; }
+        .btn-outline { background: white; color: #007BFF; border: 1px solid #007BFF; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="logo">iROOM Student</a>
+        <button class="btn btn-outline" onclick="saveData()">수업 내용 시트로 보내기 💾</button>
+    </header>
+
+    <main>
+        <section id="meet-section">
+            <div id="video-container">
+                <iframe id="meet-iframe" src="https://meet.google.com/new" allow="microphone; camera" scrolling="no"></iframe>
+            </div>
+            <div class="meet-controls">
+                <button class="btn btn-primary" onclick="startRecognition()">수업 시작 & 자막 켜기</button>
+                <input type="text" id="meet-url" placeholder="미트 주소 입력 (https://...)" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; width: 250px;">
+                <button class="btn btn-outline" onclick="loadMeet()" style="color: white; border-color: white;">미트 불러오기</button>
+            </div>
+        </section>
+
+        <section id="note-section">
+            <div class="note-header">
+                <span>Live Lesson Script</span>
+                <div id="status"><span class="status-dot"></span><span>대기 중</span></div>
+            </div>
+            <div id="transcript-container">
+                </div>
+        </section>
+    </main>
+
+    <script>
+        // ... (음성 인식 API 및 자막 추가 JS 코드는 지난번과 동일하므로 생략,
+        // 단, 색상 CSS 클래스 이름 등은 새로운 브랜드 컬러에 맞게 자동 반영됩니다.)
+        
+        const container = document.getElementById('transcript-container');
+        const status = document.getElementById('status').querySelector('span:last-child');
+        const meetIframe = document.getElementById('meet-iframe');
+        const meetUrlInput = document.getElementById('meet-url');
+
+        // 브라우저 음성 인식 API 설정
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (Recognition) {
+            recognition = new Recognition();
+            recognition.lang = 'ko-KR'; 
+            recognition.interimResults = false;
+            recognition.continuous = true;
+
+            recognition.onresult = (event) => {
+                const speechToText = event.results[event.results.length - 1][0].transcript;
+                addTranscript(speechToText);
+            };
+        }
+
+        function loadMeet() {
+            const url = meetUrlInput.value;
+            if (url && url.startsWith('https://meet.google.com/')) {
+                meetIframe.src = url;
+            } else {
+                alert("올바른 Google Meet 주소를 입력해주세요!");
+            }
+        }
+
+        function startRecognition() {
+            if (recognition) {
+                recognition.start();
+                status.innerText = "수업 진행 중 (음성 인식 중)";
+                alert("음성 인식을 시작합니다. 마이크 권한을 허용해주세요!");
+            }
+        }
+
+        function addTranscript(text) {
+            const now = new Date();
+            const timeStr = now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds();
+            const item = document.createElement('div');
+            item.className = 'script-item';
+            const translated = "Translating: " + text + "..."; // 번역 시뮬레이션
+            item.innerHTML = `
+                <div class="timestamp">${timeStr}</div>
+                <div class="original-text">${text}</div>
+                <div class="translated-text">${translated}</div>
+            `;
+            container.appendChild(item);
+            container.scrollTop = container.scrollHeight; 
+        }
+
+        function saveData() {
+            // 학생이 수업 내용을 구글 시트로 보내는 기능의 시작점
+            // 실제 구현 시 Google Apps Script API를 호출합니다.
+            alert("준비 중인 기능입니다. 수업 스크립트 데이터를 구글 시트로 전송하는 통로를 만들 예정입니다.");
+        }
+    </script>
+</body>
+</html>
