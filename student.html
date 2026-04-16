@@ -3,140 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iROOM Live DashBoard</title>
+    <title>iROOM - Global Lesson Dashboard</title>
     <style>
-        :root { --main-blue: #007BFF; --aurora-purple: #8A2BE2; --bg-dark: #121212; }
-        body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; background-color: #f8f9fa; }
+        :root { --main-blue: #007BFF; --bg-light: #f8f9fa; --text-dark: #202124; }
+        body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; background: var(--bg-light); color: var(--text-dark); }
         
-        /* 헤더 디자인 강화 */
+        /* 헤더: 저장 버튼 강조 */
         header { height: 65px; background: white; border-bottom: 2px solid #eee; display: flex; align-items: center; padding: 0 30px; position: fixed; width: 100%; top: 0; z-index: 100; justify-content: space-between; box-sizing: border-box; }
         .logo { font-size: 1.4rem; font-weight: 800; color: var(--main-blue); text-decoration: none; }
-        .session-info { font-size: 0.9rem; color: #666; font-weight: 500; }
-
+        
         main { display: flex; width: 100%; height: 100%; padding-top: 65px; box-sizing: border-box; }
         
-        /* 왼쪽: 수업 관리 대시보드 (디자인 대폭 수정) */
-        #dashboard-section { flex: 7; background-color: var(--bg-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; color: white; padding: 40px; }
-        .status-card { background: rgba(255,255,255,0.05); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); width: 80%; max-width: 500px; text-align: center; }
-        .status-card h2 { margin-top: 0; font-size: 2rem; background: linear-gradient(to right, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* 1. 구글미트 연결 영역 (왼쪽) */
+        #meet-control-section { flex: 6; background-color: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; padding: 40px; }
+        .setup-box { background: rgba(255,255,255,0.1); padding: 40px; border-radius: 24px; text-align: center; width: 100%; max-width: 450px; border: 1px solid rgba(255,255,255,0.2); }
+        .input-group { margin: 25px 0; display: flex; flex-direction: column; gap: 10px; }
+        input { padding: 15px; border-radius: 12px; border: none; font-size: 1rem; width: 100%; box-sizing: border-box; }
         
-        .control-panel { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; width: 100%; }
-        input { padding: 15px; border-radius: 12px; border: none; background: rgba(255,255,255,0.9); font-size: 1rem; width: 100%; box-sizing: border-box; }
+        /* 2. 실시간 자막 및 번역 영역 (오른쪽) */
+        #script-section { flex: 4; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; }
+        .script-header { padding: 20px; border-bottom: 2px solid #eee; background: #fff; }
+        .lang-selector { display: flex; gap: 10px; margin-top: 10px; }
+        #transcript-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         
-        /* 오른쪽: 실시간 노트 (스크립트 영역) */
-        #note-section { flex: 3; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; }
-        .note-header { padding: 20px; border-bottom: 2px solid #eee; font-weight: bold; color: var(--main-blue); display: flex; justify-content: space-between; align-items: center; }
-        #transcript-container { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; background: #fff; }
-        
-        /* 자막 스타일 */
-        .script-item { border-left: 4px solid var(--main-blue); padding-left: 15px; margin-bottom: 5px; }
-        .original-text { font-size: 1rem; color: #1a1a1a; line-height: 1.5; }
-        .timestamp { font-size: 0.75rem; color: #999; margin-bottom: 5px; }
+        /* 자막 아이템 스타일 (번역 포함) */
+        .script-item { border-left: 4px solid var(--main-blue); padding: 10px 15px; background: #f9f9f9; border-radius: 0 8px 8px 0; }
+        .timestamp { font-size: 0.75rem; color: #999; margin-bottom: 4px; }
+        .original-text { font-size: 1rem; font-weight: 600; color: #333; }
+        .translated-box { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ddd; }
+        .lang-tag { font-size: 0.7rem; background: #eee; padding: 2px 6px; border-radius: 4px; margin-right: 5px; color: #666; }
+        .trans-text { font-size: 0.9rem; color: #007BFF; }
 
-        .btn { padding: 12px 25px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; transition: 0.3s; font-size: 1rem; }
-        .btn-primary { background: var(--main-blue); color: white; }
-        .btn-primary:hover { background: #0056b3; transform: scale(1.02); }
-        .btn-save { background: #34a853; color: white; }
+        .btn { padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; transition: 0.3s; }
+        .btn-primary { background: var(--main-blue); color: white; width: 100%; font-size: 1.1rem; }
+        .btn-success { background: #34a853; color: white; }
     </style>
 </head>
 <body>
+
     <header>
-        <a href="index.html" class="logo">iROOM Dashboard</a>
-        <div class="session-info" id="session-time">오늘의 레슨: 데이터 기반 스크립팅</div>
-        <button class="btn btn-save" onclick="exportData()">수업 데이터 시트로 전송 🚀</button>
+        <a href="index.html" class="logo">iROOM Console</a>
+        <button class="btn btn-success" onclick="sendToGoogleSheet()">수업 데이터 시트 저장 💾</button>
     </header>
 
     <main>
-        <section id="dashboard-section">
-            <div class="status-card" id="main-card">
-                <h2>Lesson Ready</h2>
-                <p>구글 미트 주소를 입력하면<br>자동으로 수업 환경이 구성됩니다.</p>
-                <div class="control-panel">
+        <section id="meet-control-section">
+            <div class="setup-box" id="setup-ui">
+                <h2 style="margin-top:0;">Lesson Start</h2>
+                <p style="opacity:0.8;">구글 미트 주소를 입력하여<br>실시간 기록 세션을 시작하세요.</p>
+                <div class="input-group">
                     <input type="text" id="meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx">
-                    <button class="btn btn-primary" onclick="launchLesson()">수업 시작 (미트 팝업 + 자막 활성화)</button>
                 </div>
+                <button class="btn btn-primary" onclick="startIroomSession()">수업 시작 & 자막 켜기</button>
+            </div>
+            <div id="active-ui" style="display:none; text-align:center;">
+                <h2 style="color:#34a853;">● LIVE RECORDING</h2>
+                <p>회의는 새 창에서 진행 중입니다.<br>이 페이지에서 실시간 번역을 확인하세요.</p>
+                <div style="font-size:4rem; margin:20px 0;">🎺</div>
             </div>
         </section>
 
-        <section id="note-section">
-            <div class="note-header">
-                <span>실시간 레슨 스크립트</span>
-                <span id="rec-status" style="color:#999;">● 대기</span>
+        <section id="script-section">
+            <div class="script-header">
+                <div style="font-weight:bold; font-size:1.1rem; color:var(--main-blue);">실시간 레슨 번역 노트</div>
+                <div class="lang-selector">
+                    <select id="target-lang" style="padding:5px; border-radius:5px;">
+                        <option value="en">English (영어)</option>
+                        <option value="th">Thai (태국어)</option>
+                        <option value="ko">Korean (한국어)</option>
+                    </select>
+                    <span style="font-size:0.8rem; color:#666; align-self:center;">번역 언어 선택</span>
+                </div>
             </div>
-            <div id="transcript-container" id="transcript-list">
+            <div id="transcript-container">
                 </div>
         </section>
     </main>
 
     <script>
         const container = document.getElementById('transcript-container');
-        const recStatus = document.getElementById('rec-status');
         const meetInput = document.getElementById('meet-url');
-        const mainCard = document.getElementById('main-card');
+        const targetLangSelect = document.getElementById('target-lang');
         
-        let speechData = []; // 구글 시트 전송을 위해 데이터를 담을 배열
+        let lessonData = []; // 시트 저장을 위한 데이터 저장소
 
+        // 음성 인식 설정 (Chrome 지원)
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
 
         if (Recognition) {
             recognition = new Recognition();
-            recognition.lang = 'ko-KR';
+            recognition.lang = 'ko-KR'; // 선생님 발화 기준 (한국어)
             recognition.continuous = true;
             recognition.onresult = (event) => {
                 const text = event.results[event.results.length - 1][0].transcript;
-                addTranscript(text);
+                processTranscript(text);
             };
         }
 
-        function launchLesson() {
+        // 1. 구글미트 연결 및 세션 시작
+        function startIroomSession() {
             const url = meetInput.value;
             if (url && url.startsWith('https://meet.google.com/')) {
-                // 1. 미트를 별도 팝업창으로 띄움 (이게 핵심 변화!)
-                window.open(url, 'iRoomLesson', 'width=1100,height=850,menubar=no,status=no');
+                window.open(url, 'iRoomLesson', 'width=1100,height=800');
+                document.getElementById('setup-ui').style.display = 'none';
+                document.getElementById('active-ui').style.display = 'block';
                 
-                // 2. 왼쪽 대시보드 UI를 '수업 중' 모드로 변경
-                mainCard.innerHTML = `
-                    <h2 style="color:#34a853;">ON AIR</h2>
-                    <p>현재 수업이 기록되고 있습니다.<br>미트 창과 이 창을 나란히 배치하세요.</p>
-                    <div style="font-size:3rem; margin:20px 0;">🎙️</div>
-                `;
-                
-                // 3. 자막 인식 시작
                 if (recognition) {
                     recognition.start();
-                    recStatus.innerText = "● 기록 중";
-                    recStatus.style.color = "#ff4b4b";
                 }
             } else {
-                alert("정확한 Google Meet 주소를 입력해 주세요!");
+                alert("정확한 Google Meet 주소를 입력해주세요!");
             }
         }
 
-        function addTranscript(text) {
+        // 2. 실시간 자막 생성 및 번역 (시뮬레이션 포함)
+        async function processTranscript(text) {
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
+            const targetLang = targetLangSelect.value;
             
-            // 데이터 배열에 저장 (나중에 시트 전송용)
-            speechData.push({ time: timeStr, content: text });
+            // 실제 서비스 시에는 Google Translate API 등을 이곳에서 호출합니다.
+            // 현재는 시뮬레이션을 위해 태국어/영어 예시 문구를 생성합니다.
+            let dummyTrans = "";
+            if(targetLang === 'th') dummyTrans = "[TH] บันทึกการสอน: " + text;
+            else if(targetLang === 'en') dummyTrans = "[EN] Lesson Log: " + text;
+            else dummyTrans = "[KO] 기록: " + text;
 
             const item = document.createElement('div');
             item.className = 'script-item';
             item.innerHTML = `
                 <div class="timestamp">${timeStr}</div>
                 <div class="original-text">${text}</div>
+                <div class="translated-box">
+                    <span class="lang-tag">${targetLang.toUpperCase()}</span>
+                    <span class="trans-text">${dummyTrans}</span>
+                </div>
             `;
             container.appendChild(item);
             container.scrollTop = container.scrollHeight;
+
+            // 데이터 축적
+            lessonData.push({
+                time: timeStr,
+                original: text,
+                translated: dummyTrans,
+                language: targetLang
+            });
         }
 
-        function exportData() {
-            if(speechData.length === 0) {
-                alert("저장할 데이터가 없습니다.");
+        // 3. 구글 시트로 데이터 저장 (GAS 연동 준비)
+        function sendToGoogleSheet() {
+            if (lessonData.length === 0) {
+                alert("저장할 수업 데이터가 없습니다.");
                 return;
             }
-            console.log("전송될 데이터:", speechData);
-            alert(speechData.length + "개의 문장이 구글 시트로 전송될 준비가 되었습니다! (GAS 연동 대기)");
+
+            // 나중에 대표님이 만드실 Google Apps Script URL을 여기에 연결합니다.
+            console.log("전송 데이터:", lessonData);
+            
+            // 데이터 형식을 확인시켜주기 위한 알림
+            const summary = lessonData.length + "개의 문장이 수집되었습니다.\n" + 
+                           "시트 저장 기능(Google Apps Script) 연동 단계입니다.";
+            alert(summary);
         }
     </script>
 </body>
