@@ -2,26 +2,38 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>iROOM Console - Student Mode</title>
+    <title>iROOM Console - Teacher Mode</title>
     <style>
-        /* CSS는 Teacher와 거의 동일하며 말풍선 정렬만 다름 */
         :root { --teacher-blue: #007BFF; --student-red: #FF4136; --bg: #f5f7f9; }
         body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; background: var(--bg); }
+        #control-panel { width: 350px; background: #1a1a1a; color: white; padding: 30px; box-sizing: border-box; }
         #chat-area { flex: 1; display: flex; flex-direction: column; background: white; }
         #transcript-container { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .msg { padding: 15px; border-radius: 12px; max-width: 80%; line-height: 1.5; }
-        .msg-S { align-self: flex-end; background: #fff1f0; border-right: 5px solid var(--student-red); color: #842029; }
-        .msg-T { align-self: flex-start; background: #e7f3ff; border-left: 5px solid var(--teacher-blue); color: #004085; }
+        
+        /* 말풍선 스타일 */
+        .msg { padding: 15px; border-radius: 12px; max-width: 80%; line-height: 1.5; position: relative; }
+        .msg-T { align-self: flex-end; background: #e7f3ff; border-right: 5px solid var(--teacher-blue); color: #004085; }
+        .msg-S { align-self: flex-start; background: #fff1f0; border-left: 5px solid var(--student-red); color: #842029; }
+        
         .timestamp { font-size: 0.7rem; color: #999; margin-bottom: 4px; }
         .translated { font-weight: bold; display: block; margin-top: 5px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 5px; }
-        #setup { position: fixed; bottom: 20px; left: 20px; background: rgba(0,0,0,0.8); color: white; padding: 15px; border-radius: 10px; z-index: 100; }
+        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-start { background: var(--teacher-blue); color: white; }
+        select, input { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: none; }
     </style>
 </head>
 <body>
-    <div id="setup">
-        <label>내 언어</label>
-        <select id="in-lang"><option value="en">English</option><option value="th">Thai</option></select>
-        <button onclick="initStudent()">수업 참여</button>
+    <div id="control-panel">
+        <h2>iROOM Teacher</h2>
+        <p style="font-size:0.8rem; color:#888;">실시간 공유 모드 활성화</p>
+        <hr>
+        <label>Google Meet URL</label>
+        <input type="text" id="meet-url" placeholder="https://meet.google.com/...">
+        <label style="margin-top:15px; display:block;">내 언어 (출력 자막)</label>
+        <select id="in-lang"><option value="ko">한국어</option><option value="en">영어</option></select>
+        <label style="margin-top:15px; display:block;">학생 언어 (번역 자막)</label>
+        <select id="out-lang"><option value="th">태국어</option><option value="en">영어</option></select>
+        <button class="btn btn-start" onclick="initTeacher()">레슨 시작</button>
     </div>
     <div id="chat-area">
         <div id="transcript-container"></div>
@@ -32,26 +44,31 @@
         const container = document.getElementById('transcript-container');
         let lastTimestamp = null;
 
+        // 1. 내가 말하기 (인식 및 저장)
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        function initStudent() {
+        function initTeacher() {
+            const url = document.getElementById('meet-url').value;
+            if(url) window.open(url, '_blank');
+            
             const recog = new Recognition();
-            recog.lang = document.getElementById('in-lang').value === 'en' ? 'en-US' : 'th-TH';
+            recog.lang = 'ko-KR';
             recog.continuous = true;
             recog.onresult = (e) => {
                 const text = e.results[e.results.length-1][0].transcript;
-                sendToDB('S', text); // 학생은 'S'로 저장
+                sendToDB('T', text);
             };
             recog.start();
+            
+            // 2. 상대방 글 읽어오기 (1.5초 주기 동기화)
             setInterval(syncDB, 1500);
-            document.getElementById('setup').style.display = 'none';
         }
 
-        // sendToDB와 syncDB 로직은 Teacher와 동일 (user 파라미터만 'S'로 전달)
         function sendToDB(user, text) {
             const src = document.getElementById('in-lang').value;
-            const tar = "ko"; // 선생님은 항상 한국어로 받음
+            const tar = document.getElementById('out-lang').value;
             const cb = 'cb_' + Date.now();
+            window[cb] = (res) => { delete window[cb]; }; // 저장 완료
+
             const script = document.createElement('script');
             script.src = `${GAS_URL}?mode=chat&user=${user}&text=${encodeURIComponent(text)}&source=${src}&target=${tar}&callback=${cb}`;
             document.body.appendChild(script);
@@ -60,13 +77,15 @@
         function syncDB() {
             const cb = 'sync_' + Date.now();
             window[cb] = (data) => {
-                if (data.time !== lastTimestamp && data.original) {
+                if (data.time !== lastTimestamp) {
                     renderMsg(data.user, data.original, data.translated);
                     lastTimestamp = data.time;
                 }
                 delete window[cb];
+                document.body.removeChild(document.getElementById(cb));
             };
             const script = document.createElement('script');
+            script.id = cb;
             script.src = `${GAS_URL}?mode=sync&callback=${cb}`;
             document.body.appendChild(script);
         }
@@ -74,7 +93,7 @@
         function renderMsg(user, ori, trans) {
             const div = document.createElement('div');
             div.className = `msg msg-${user}`;
-            div.innerHTML = `<div class="timestamp">${user==='T'?'선생님':'나'}</div>${ori}<span class="translated">🌐 ${trans}</span>`;
+            div.innerHTML = `<div class="timestamp">${user==='T'?'나':'학생'}</div>${ori}<span class="translated">🌐 ${trans}</span>`;
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
         }
