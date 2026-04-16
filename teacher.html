@@ -2,105 +2,94 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>iROOM Teacher v6.7</title>
+    <title>iROOM Live - Teacher</title>
     <style>
-        :root { --teacher-blue: #007BFF; --student-red: #FF4136; --bg: #f5f7f9; }
-        body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
-        #control-panel { width: 350px; background: #1a1a1a; color: white; padding: 30px; box-sizing: border-box; display: flex; flex-direction: column; }
-        #chat-area { flex: 1; display: flex; flex-direction: column; background: white; border-left: 1px solid #ddd; }
-        #transcript-container { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 15px; border-radius: 12px; max-width: 85%; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .msg-T { align-self: flex-end; background: #e7f3ff; border-right: 5px solid var(--teacher-blue); color: #004085; }
-        .msg-S { align-self: flex-start; background: #fff1f0; border-left: 5px solid var(--student-red); color: #842029; }
-        .timestamp { font-size: 0.7rem; color: #999; margin-bottom: 5px; font-weight: bold; }
-        .translated { font-weight: bold; display: block; margin-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 8px; color: var(--teacher-blue); }
-        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        .btn-start { background: var(--teacher-blue); color: white; font-size: 1.1rem; }
-        input, select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; }
-        label { font-size: 0.85rem; color: #aaa; margin-top: 15px; display: block; }
+        :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
+        body { margin: 0; font-family: 'Pretendard', sans-serif; background: var(--bg); display: flex; height: 100vh; }
+        #sidebar { width: 300px; background: #1c1e21; color: white; padding: 25px; box-sizing: border-box; }
+        #chat-main { flex: 1; display: flex; flex-direction: column; background: white; }
+        #chat-window { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        
+        /* 채팅 디자인 */
+        .bubble { padding: 12px 16px; border-radius: 18px; max-width: 70%; line-height: 1.4; position: relative; font-size: 1rem; }
+        .bubble-T { align-self: flex-end; background: var(--t-blue); color: white; border-bottom-right-radius: 2px; }
+        .bubble-S { align-self: flex-start; background: #e4e6eb; color: #050505; border-bottom-left-radius: 2px; }
+        
+        .trans-text { display: block; font-size: 0.85rem; margin-top: 5px; opacity: 0.9; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 5px; }
+        .bubble-S .trans-text { border-top: 1px solid rgba(0,0,0,0.1); color: var(--t-blue); font-weight: bold; }
+        
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        button { width: 100%; padding: 15px; border-radius: 10px; border: none; background: var(--t-blue); color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="control-panel">
-        <h2 style="color:var(--teacher-blue); margin-top:0;">iROOM Teacher</h2>
-        <hr style="border:0.5px solid #333; width:100%;">
-        <label>Google Meet URL</label>
-        <input type="text" id="meet-url" placeholder="https://meet.google.com/...">
-        <label>내 언어 (한국어)</label>
-        <select id="in-lang"><option value="ko">한국어 (Korean)</option></select>
-        <label>학생 언어 (번역)</label>
-        <select id="out-lang"><option value="th">태국어 (Thai)</option><option value="en">영어 (English)</option></select>
-        <button class="btn btn-start" onclick="initTeacher()">레슨 시작</button>
-        <div id="status" style="margin-top:20px; font-size:0.8rem; text-align:center; color:#555;">● 대기 중</div>
+    <div id="sidebar">
+        <h2>iROOM Room 1</h2>
+        <p style="font-size:0.8rem; color:#aaa;">상태: <span id="st-text">대기 중</span></p>
+        <label style="font-size:0.75rem;">학생 번역 언어</label>
+        <select id="tar-lang" style="width:100%; padding:8px; margin-top:5px; border-radius:5px;">
+            <option value="th">태국어 (Thai)</option>
+            <option value="en">영어 (English)</option>
+        </select>
+        <button onclick="startSession()" style="margin-top:20px;">수업 입장 (마이크 켜기)</button>
     </div>
-    <div id="chat-area">
-        <div id="transcript-container"></div>
+    <div id="chat-main">
+        <div id="chat-window"></div>
     </div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzlFaUJmZuSo2I5ekgKcgQLQtJlocsYzbeDaXP05mEmOyHDjGnVTO8E22bEASExk15S/exec";
-        const container = document.getElementById('transcript-container');
-        let lastMsgTime = null;
+        let lastTime = null;
+        const windowDiv = document.getElementById('chat-window');
 
-        function initTeacher() {
-            const url = document.getElementById('meet-url').value;
-            if (url) window.open(url, 'iRoomLesson', 'width=1000,height=700');
-
+        function startSession() {
+            document.getElementById('st-text').innerText = "연결됨";
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (Recognition) {
-                const recog = new Recognition();
-                recog.lang = 'ko-KR';
-                recog.continuous = true;
-                recog.onresult = (e) => {
-                    const text = e.results[e.results.length - 1][0].transcript;
-                    // 1. 내 화면에 즉시 표시 (속도감)
-                    renderMsg('T', text, '번역 중...');
-                    // 2. 서버 저장 및 번역 요청
-                    sendToDB('T', text);
-                };
-                recog.start();
-                document.getElementById('status').innerText = "● 마이크 감지 중...";
-                document.getElementById('status').style.color = "#34a853";
-            }
-            setInterval(syncDB, 2000); // 2초마다 상대방 글 체크
+            const recog = new Recognition();
+            recog.lang = 'ko-KR';
+            recog.continuous = true;
+            recog.onresult = (e) => {
+                const text = e.results[e.results.length - 1][0].transcript;
+                addBubble('T', text, '번역 중...');
+                saveToDB('T', text);
+            };
+            recog.start();
+            setInterval(sync, 1500);
         }
 
-        function sendToDB(user, text) {
-            const src = document.getElementById('in-lang').value;
-            const tar = document.getElementById('out-lang').value;
+        function saveToDB(user, text) {
+            const tar = document.getElementById('tar-lang').value;
             const cb = 'cb_' + Date.now();
             window[cb] = (res) => {
-                // 번역 완료 시 마지막 메시지의 '번역 중' 글자 교체
-                const lastTrans = container.querySelector('.msg-T:last-child .translated');
-                if(lastTrans) lastTrans.innerText = "🌐 " + res.translated;
+                const bubbles = document.querySelectorAll('.bubble-T');
+                bubbles[bubbles.length-1].querySelector('.trans-text').innerText = "🌐 " + res.translated;
                 delete window[cb];
             };
-            const script = document.createElement('script');
-            script.src = `${GAS_URL}?mode=chat&user=${user}&text=${encodeURIComponent(text)}&source=${src}&target=${tar}&callback=${cb}`;
-            document.body.appendChild(script);
+            const s = document.createElement('script');
+            s.src = `${GAS_URL}?mode=chat&user=${user}&text=${encodeURIComponent(text)}&source=ko&target=${tar}&callback=${cb}`;
+            document.body.appendChild(s);
         }
 
-        function syncDB() {
-            const cb = 'sync_' + Date.now();
-            window[cb] = (data) => {
-                // 학생(S)이 쓴 새 글이 있을 때만 렌더링
-                if (data.user === 'S' && data.time !== lastMsgTime) {
-                    renderMsg('S', data.original, data.translated);
-                    lastMsgTime = data.time;
+        function sync() {
+            const cb = 's_' + Date.now();
+            window[cb] = (d) => {
+                if (d.user === 'S' && d.time !== lastTime) {
+                    addBubble('S', d.original, d.translated);
+                    lastTime = d.time;
                 }
                 delete window[cb];
             };
-            const script = document.createElement('script');
-            script.src = `${GAS_URL}?mode=sync&callback=${cb}`;
-            document.body.appendChild(script);
+            const s = document.createElement('script');
+            s.src = `${GAS_URL}?mode=sync&callback=${cb}`;
+            document.body.appendChild(s);
         }
 
-        function renderMsg(user, ori, trans) {
+        function addBubble(user, ori, trans) {
             const div = document.createElement('div');
-            div.className = `msg msg-${user}`;
-            div.innerHTML = `<div class="timestamp">${user==='T'?'나':'학생'}</div>${ori}<span class="translated">${trans}</span>`;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
+            div.className = `bubble bubble-${user}`;
+            div.innerHTML = `${ori} <span class="trans-text">${user==='T'?trans:'🌐 '+trans}</span>`;
+            windowDiv.appendChild(div);
+            windowDiv.scrollTop = windowDiv.scrollHeight;
         }
     </script>
 </body>
