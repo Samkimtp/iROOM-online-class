@@ -2,8 +2,9 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>iROOM Live - Student</title>
+    <title>iROOM Live - Student v7.0</title>
     <style>
+        /* CSS 스타일은 Teacher와 동일, 색상만 Red */
         :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
         body { margin: 0; font-family: 'Pretendard', sans-serif; background: var(--bg); display: flex; height: 100vh; }
         #sidebar { width: 300px; background: #1c1e21; color: white; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; }
@@ -14,20 +15,20 @@
         .bubble-T { align-self: flex-start; background: #e4e6eb; color: #050505; border-bottom-left-radius: 2px; }
         .trans { display: block; font-size: 0.9rem; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; }
         .bubble-T .trans { border-top: 1px solid rgba(0,0,0,0.1); color: var(--s-red); font-weight: bold; }
-        #user-count { margin-top: auto; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; font-size: 0.9rem; }
+        #user-count { margin-top: auto; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; font-size: 0.9rem; border: 1px solid var(--s-red); }
         button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--s-red); color: white; font-weight: bold; cursor: pointer; font-size: 1rem; }
     </style>
 </head>
 <body>
     <div id="sidebar">
-        <h2 style="color:var(--s-red);">iROOM Lesson</h2>
-        <p style="font-size:0.85rem; color:#888;">Status: <span id="st-text" style="color:#fff;">Ready</span></p>
+        <h2 style="color:var(--s-red);">iROOM Student</h2>
+        <p style="font-size:0.85rem; color:#888;">Status: <span id="st-text" style="color:#fff;">Waiting</span></p>
         <label style="font-size:0.8rem; color:#aaa;">My Language</label>
         <select id="my-lang" style="width:100%; padding:10px; margin-top:8px; border-radius:8px; background:#2a2a2a; color:white; border:none;">
             <option value="th">Thai (태국어)</option>
             <option value="en">English (영어)</option>
         </select>
-        <div id="user-count">👥 Online: <span id="count-num">1</span></div>
+        <div id="user-count">👥 Online: <span id="count-num">?</span> (Teacher: <span id="remote-st">-</span>)</div>
         <button onclick="startSession()" style="margin-top:15px;">Join Lesson</button>
     </div>
     <div id="chat-main"><div id="chat-window"></div></div>
@@ -37,62 +38,52 @@
         let lastTime = null;
         const windowDiv = document.getElementById('chat-window');
 
+        async function apiCall(params) {
+            const query = new URLSearchParams(params).toString();
+            try {
+                const response = await fetch(`${GAS_URL}?${query}`);
+                const text = await response.text();
+                const json = JSON.parse(text.substring(text.indexOf('(') + 1, text.lastIndexOf(')')));
+                return json;
+            } catch (e) { return null; }
+        }
+
         function startSession() {
-            document.getElementById('st-text').innerText = "Mic Active";
+            document.getElementById('st-text').innerText = "Mic On";
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (Recognition) {
-                const recog = new Recognition();
-                recog.lang = document.getElementById('my-lang').value === 'th' ? 'th-TH' : 'en-US';
-                recog.continuous = true;
-                recog.onresult = (e) => {
-                    const text = e.results[e.results.length - 1][0].transcript;
-                    addBubble('S', text, 'Translating...');
-                    saveToDB('S', text);
-                };
-                recog.start();
+            const recog = new Recognition();
+            recog.lang = document.getElementById('my-lang').value === 'th' ? 'th-TH' : 'en-US';
+            recog.continuous = true;
+            recog.onresult = async (e) => {
+                const text = e.results[e.results.length - 1][0].transcript;
+                const bubble = addBubble('S', text, 'Translating...');
+                const res = await apiCall({
+                    mode: 'chat', user: 'S', text: text,
+                    source: document.getElementById('my-lang').value, target: 'ko',
+                    callback: 'callback'
+                });
+                if(res) bubble.querySelector('.trans').innerText = "🌐 " + res.translated;
+            };
+            recog.start();
+            setInterval(sync, 2000);
+            setInterval(heartbeat, 10000);
+            heartbeat();
+        }
+
+        async function sync() {
+            const data = await apiCall({ mode: 'sync', callback: 'callback' });
+            if (data && data.user === 'T' && data.time !== lastTime) {
+                addBubble('T', data.original, data.translated);
+                lastTime = data.time;
             }
-            setInterval(sync, 1500);
-            setInterval(checkHB, 15000);
-            checkHB();
         }
 
-        function saveToDB(user, text) {
-            const src = document.getElementById('my-lang').value;
-            const cb = 'cb_' + Date.now();
-            window[cb] = (res) => {
-                const bubbles = document.querySelectorAll('.bubble-S');
-                if(bubbles.length > 0) bubbles[bubbles.length-1].querySelector('.trans').innerText = "🌐 " + res.translated;
-                delete window[cb];
-            };
-            const s = document.createElement('script');
-            s.src = `${GAS_URL}?mode=chat&user=${user}&text=${encodeURIComponent(text)}&source=${src}&target=ko&callback=${cb}`;
-            document.body.appendChild(s);
-        }
-
-        function sync() {
-            const cb = 's_' + Date.now();
-            window[cb] = (d) => {
-                if (d.user === 'T' && d.time !== lastTime) {
-                    addBubble('T', d.original, d.translated);
-                    lastTime = d.time;
-                }
-                delete window[cb];
-            };
-            const s = document.createElement('script');
-            s.src = `${GAS_URL}?mode=sync&callback=${cb}`;
-            document.body.appendChild(s);
-        }
-
-        function checkHB() {
-            const cb = 'hb_' + Date.now();
-            window[cb] = (res) => {
+        async function heartbeat() {
+            const res = await apiCall({ mode: 'heartbeat', user: 'S', callback: 'callback' });
+            if (res) {
                 document.getElementById('count-num').innerText = res.onlineCount;
-                document.getElementById('st-text').innerText = res.otherOnline ? "Teacher Connected" : "Waiting for Teacher";
-                delete window[cb];
-            };
-            const s = document.createElement('script');
-            s.src = `${GAS_URL}?mode=heartbeat&user=S&callback=${cb}`;
-            document.body.appendChild(s);
+                document.getElementById('remote-st').innerText = res.otherOnline ? "선생님 접속중" : "선생님 대기중";
+            }
         }
 
         function addBubble(user, ori, trans) {
@@ -101,6 +92,7 @@
             div.innerHTML = `${ori} <span class="trans">${user==='S'?trans:'🌐 '+trans}</span>`;
             windowDiv.appendChild(div);
             windowDiv.scrollTop = windowDiv.scrollHeight;
+            return div;
         }
     </script>
 </body>
