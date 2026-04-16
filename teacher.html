@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>iROOM Teacher v6.6</title>
+    <title>iROOM Teacher v6.7</title>
     <style>
         :root { --teacher-blue: #007BFF; --student-red: #FF4136; --bg: #f5f7f9; }
         body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
@@ -16,7 +16,6 @@
         .translated { font-weight: bold; display: block; margin-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 8px; color: var(--teacher-blue); }
         .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
         .btn-start { background: var(--teacher-blue); color: white; font-size: 1.1rem; }
-        .btn-start:hover { background: #0056b3; }
         input, select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; }
         label { font-size: 0.85rem; color: #aaa; margin-top: 15px; display: block; }
     </style>
@@ -24,90 +23,70 @@
 <body>
     <div id="control-panel">
         <h2 style="color:var(--teacher-blue); margin-top:0;">iROOM Teacher</h2>
-        <p style="font-size:0.8rem; color:#888;">데이터 기반 실시간 레슨 시스템</p>
         <hr style="border:0.5px solid #333; width:100%;">
-        
         <label>Google Meet URL</label>
-        <input type="text" id="meet-url" placeholder="https://meet.google.com/..." value="">
-        
-        <label>내 언어 (인식)</label>
+        <input type="text" id="meet-url" placeholder="https://meet.google.com/...">
+        <label>내 언어 (한국어)</label>
         <select id="in-lang"><option value="ko">한국어 (Korean)</option></select>
-        
         <label>학생 언어 (번역)</label>
         <select id="out-lang"><option value="th">태국어 (Thai)</option><option value="en">영어 (English)</option></select>
-        
-        <button class="btn btn-start" onclick="initTeacher()">수업 시작 & 팝업 열기</button>
+        <button class="btn btn-start" onclick="initTeacher()">레슨 시작</button>
         <div id="status" style="margin-top:20px; font-size:0.8rem; text-align:center; color:#555;">● 대기 중</div>
     </div>
-
     <div id="chat-area">
-        <div id="transcript-container">
-            <p style="text-align:center; color:#999; margin-top:50px;">마이크 권한 허용 후 말씀을 시작하세요.</p>
-        </div>
+        <div id="transcript-container"></div>
     </div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzlFaUJmZuSo2I5ekgKcgQLQtJlocsYzbeDaXP05mEmOyHDjGnVTO8E22bEASExk15S/exec";
         const container = document.getElementById('transcript-container');
-        let lastTimestamp = null;
+        let lastMsgTime = null;
 
         function initTeacher() {
-            // 1. 구글 미트 팝업으로 열기
             const url = document.getElementById('meet-url').value;
-            if (url) {
-                const popupWidth = 1000;
-                const popupHeight = 700;
-                const left = (window.screen.width / 2) - (popupWidth / 2);
-                const top = (window.screen.height / 2) - (popupHeight / 2);
-                window.open(url, 'iRoomLesson', `width=${popupWidth},height=${popupHeight},top=${top},left=${left},resizable=yes,scrollbars=yes`);
-            }
+            if (url) window.open(url, 'iRoomLesson', 'width=1000,height=700');
 
-            // 2. 음성 인식 시작
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (Recognition) {
                 const recog = new Recognition();
                 recog.lang = 'ko-KR';
                 recog.continuous = true;
-                recog.interimResults = false;
-
-                recog.onstart = () => {
-                    document.getElementById('status').innerText = "● 마이크 감지 중...";
-                    document.getElementById('status').style.color = "#34a853";
-                };
-
                 recog.onresult = (e) => {
                     const text = e.results[e.results.length - 1][0].transcript;
+                    // 1. 내 화면에 즉시 표시 (속도감)
+                    renderMsg('T', text, '번역 중...');
+                    // 2. 서버 저장 및 번역 요청
                     sendToDB('T', text);
                 };
-
-                recog.onend = () => { recog.start(); }; // 끊김 방지 자동 재시작
                 recog.start();
+                document.getElementById('status').innerText = "● 마이크 감지 중...";
+                document.getElementById('status').style.color = "#34a853";
             }
-
-            // 3. 실시간 데이터 동기화 시작
-            setInterval(syncDB, 1500);
-            container.innerHTML = "";
+            setInterval(syncDB, 2000); // 2초마다 상대방 글 체크
         }
 
         function sendToDB(user, text) {
             const src = document.getElementById('in-lang').value;
             const tar = document.getElementById('out-lang').value;
             const cb = 'cb_' + Date.now();
-            
+            window[cb] = (res) => {
+                // 번역 완료 시 마지막 메시지의 '번역 중' 글자 교체
+                const lastTrans = container.querySelector('.msg-T:last-child .translated');
+                if(lastTrans) lastTrans.innerText = "🌐 " + res.translated;
+                delete window[cb];
+            };
             const script = document.createElement('script');
             script.src = `${GAS_URL}?mode=chat&user=${user}&text=${encodeURIComponent(text)}&source=${src}&target=${tar}&callback=${cb}`;
             document.body.appendChild(script);
-            
-            // 콜백 함수: 저장 직후 화면에 먼저 띄워 속도감 부여
-            window[cb] = (res) => { delete window[cb]; };
         }
 
         function syncDB() {
             const cb = 'sync_' + Date.now();
             window[cb] = (data) => {
-                if (data.time && data.time !== lastTimestamp) {
-                    renderMsg(data.user, data.original, data.translated);
-                    lastTimestamp = data.time;
+                // 학생(S)이 쓴 새 글이 있을 때만 렌더링
+                if (data.user === 'S' && data.time !== lastMsgTime) {
+                    renderMsg('S', data.original, data.translated);
+                    lastMsgTime = data.time;
                 }
                 delete window[cb];
             };
@@ -119,7 +98,7 @@
         function renderMsg(user, ori, trans) {
             const div = document.createElement('div');
             div.className = `msg msg-${user}`;
-            div.innerHTML = `<div class="timestamp">${user==='T'?'선생님':'학생'}</div>${ori}<span class="translated">🌐 ${trans}</span>`;
+            div.innerHTML = `<div class="timestamp">${user==='T'?'나':'학생'}</div>${ori}<span class="translated">${trans}</span>`;
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
         }
