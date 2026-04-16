@@ -2,29 +2,47 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>iROOM Console - Student Mode</title>
+    <title>iROOM Student v6.6</title>
     <style>
-        /* CSS는 Teacher와 거의 동일하며 말풍선 정렬만 다름 */
+        /* CSS는 Teacher와 거의 동일, 학생 강조 색상(Red) 적용 */
         :root { --teacher-blue: #007BFF; --student-red: #FF4136; --bg: #f5f7f9; }
-        body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; background: var(--bg); }
-        #chat-area { flex: 1; display: flex; flex-direction: column; background: white; }
-        #transcript-container { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .msg { padding: 15px; border-radius: 12px; max-width: 80%; line-height: 1.5; }
+        body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
+        #control-panel { width: 350px; background: #1a1a1a; color: white; padding: 30px; box-sizing: border-box; display: flex; flex-direction: column; }
+        #chat-area { flex: 1; display: flex; flex-direction: column; background: white; border-left: 1px solid #ddd; }
+        #transcript-container { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 15px; border-radius: 12px; max-width: 85%; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .msg-S { align-self: flex-end; background: #fff1f0; border-right: 5px solid var(--student-red); color: #842029; }
         .msg-T { align-self: flex-start; background: #e7f3ff; border-left: 5px solid var(--teacher-blue); color: #004085; }
-        .timestamp { font-size: 0.7rem; color: #999; margin-bottom: 4px; }
-        .translated { font-weight: bold; display: block; margin-top: 5px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 5px; }
-        #setup { position: fixed; bottom: 20px; left: 20px; background: rgba(0,0,0,0.8); color: white; padding: 15px; border-radius: 10px; z-index: 100; }
+        .timestamp { font-size: 0.7rem; color: #999; margin-bottom: 5px; font-weight: bold; }
+        .translated { font-weight: bold; display: block; margin-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 8px; color: var(--student-red); }
+        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; background: var(--student-red); color: white; }
+        input, select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; }
+        label { font-size: 0.85rem; color: #aaa; margin-top: 15px; display: block; }
     </style>
 </head>
 <body>
-    <div id="setup">
-        <label>내 언어</label>
-        <select id="in-lang"><option value="en">English</option><option value="th">Thai</option></select>
-        <button onclick="initStudent()">수업 참여</button>
+    <div id="control-panel">
+        <h2 style="color:var(--student-red); margin-top:0;">iROOM Student</h2>
+        <p style="font-size:0.8rem; color:#888;">AI 실시간 번역 레슨 참여</p>
+        <hr style="border:0.5px solid #333; width:100%;">
+        
+        <label>내 언어 (Input Language)</label>
+        <select id="in-lang">
+            <option value="th">Thai (태국어)</option>
+            <option value="en">English (영어)</option>
+        </select>
+        
+        <label>수업 알림</label>
+        <div style="font-size:0.85rem; color:#ccc; line-height:1.4;">선생님의 말씀이 한국어로 번역되어 실시간으로 표시됩니다.</div>
+        
+        <button class="btn" onclick="initStudent()">레슨 참여 시작</button>
+        <div id="status" style="margin-top:20px; font-size:0.8rem; text-align:center; color:#555;">● 대기 중</div>
     </div>
+
     <div id="chat-area">
-        <div id="transcript-container"></div>
+        <div id="transcript-container">
+            <p style="text-align:center; color:#999; margin-top:50px;">선생님이 수업을 시작하면 자막이 나타납니다.</p>
+        </div>
     </div>
 
     <script>
@@ -32,35 +50,46 @@
         const container = document.getElementById('transcript-container');
         let lastTimestamp = null;
 
-        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
         function initStudent() {
-            const recog = new Recognition();
-            recog.lang = document.getElementById('in-lang').value === 'en' ? 'en-US' : 'th-TH';
-            recog.continuous = true;
-            recog.onresult = (e) => {
-                const text = e.results[e.results.length-1][0].transcript;
-                sendToDB('S', text); // 학생은 'S'로 저장
-            };
-            recog.start();
+            const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (Recognition) {
+                const recog = new Recognition();
+                const selectedLang = document.getElementById('in-lang').value;
+                recog.lang = selectedLang === 'th' ? 'th-TH' : 'en-US';
+                recog.continuous = true;
+                
+                recog.onstart = () => {
+                    document.getElementById('status').innerText = "● 마이크 가동 중...";
+                    document.getElementById('status').style.color = "#34a853";
+                };
+
+                recog.onresult = (e) => {
+                    const text = e.results[e.results.length - 1][0].transcript;
+                    sendToDB('S', text);
+                };
+
+                recog.onend = () => { recog.start(); };
+                recog.start();
+            }
             setInterval(syncDB, 1500);
-            document.getElementById('setup').style.display = 'none';
+            container.innerHTML = "";
         }
 
-        // sendToDB와 syncDB 로직은 Teacher와 동일 (user 파라미터만 'S'로 전달)
+        // sendToDB, syncDB, renderMsg 함수는 Teacher와 동일 (단, sendToDB의 target은 항상 'ko')
         function sendToDB(user, text) {
             const src = document.getElementById('in-lang').value;
-            const tar = "ko"; // 선생님은 항상 한국어로 받음
+            const tar = 'ko'; 
             const cb = 'cb_' + Date.now();
             const script = document.createElement('script');
             script.src = `${GAS_URL}?mode=chat&user=${user}&text=${encodeURIComponent(text)}&source=${src}&target=${tar}&callback=${cb}`;
             document.body.appendChild(script);
+            window[cb] = (res) => { delete window[cb]; };
         }
 
         function syncDB() {
             const cb = 'sync_' + Date.now();
             window[cb] = (data) => {
-                if (data.time !== lastTimestamp && data.original) {
+                if (data.time && data.time !== lastTimestamp) {
                     renderMsg(data.user, data.original, data.translated);
                     lastTimestamp = data.time;
                 }
