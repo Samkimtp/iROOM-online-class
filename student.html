@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iROOM Console v6.1 - Final Lesson Ready</title>
+    <title>iROOM Console v6.2 - Lesson Ready</title>
     <style>
         :root { --main-blue: #007BFF; --bg-light: #f8f9fa; --text-dark: #202124; }
         body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; background: var(--bg-light); color: var(--text-dark); }
@@ -16,9 +16,8 @@
         label { font-size: 0.85rem; color: #aaa; display: block; margin-bottom: 5px; }
         select, input { padding: 12px; border-radius: 10px; border: none; font-size: 1rem; width: 100%; box-sizing: border-box; }
         #script-section { flex: 6; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; }
-        .script-header { padding: 20px; border-bottom: 2px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         #transcript-container { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .script-item { border-left: 5px solid var(--main-blue); padding: 12px 15px; background: #fdfdfd; border-radius: 0 10px 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: 0.3s; }
+        .script-item { border-left: 5px solid var(--main-blue); padding: 12px 15px; background: #fdfdfd; border-radius: 0 10px 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
         .timestamp { font-size: 0.75rem; color: #999; margin-bottom: 5px; }
         .original-text { font-size: 1.05rem; font-weight: 600; color: #333; }
         .translated-box { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee; color: var(--main-blue); font-weight: 500; font-size: 1rem; }
@@ -30,8 +29,8 @@
 <body>
 
     <header>
-        <a href="index.html" class="logo">iROOM Console v6.1</a>
-        <button class="btn btn-success" onclick="downloadCSV()">수업 내용 저장 (.csv) 💾</button>
+        <a href="index.html" class="logo">iROOM Console v6.2</a>
+        <button class="btn btn-success" onclick="downloadCSV()">수업 데이터 저장 (.csv) 💾</button>
     </header>
 
     <main>
@@ -40,10 +39,10 @@
                 <h3 style="margin-top:0; text-align:center;">Lesson Setup</h3>
                 <div class="setting-item">
                     <label>Google Meet URL</label>
-                    <input type="text" id="meet-url" placeholder="주소를 입력하세요">
+                    <input type="text" id="meet-url" placeholder="https://meet.google.com/...">
                 </div>
                 <div class="setting-item">
-                    <label>내 언어 (내가 말할 언어)</label>
+                    <label>선생님 언어 (말하는 언어)</label>
                     <select id="input-lang">
                         <option value="ko">한국어 (Korean)</option>
                         <option value="en">English (영어)</option>
@@ -51,28 +50,27 @@
                     </select>
                 </div>
                 <div class="setting-item">
-                    <label>상대방 언어 (번역될 언어)</label>
+                    <label>학생 언어 (번역될 언어)</label>
                     <select id="output-lang">
                         <option value="th">Thai (태국어)</option>
                         <option value="en">English (영어)</option>
                         <option value="ko">Korean (한국어)</option>
                     </select>
                 </div>
-                <button class="btn btn-primary" id="start-btn" onclick="startLesson()">수업 시작 & 기록</button>
+                <button class="btn btn-primary" id="start-btn" onclick="startLesson()">레슨 시작 & 기록 가동</button>
             </div>
         </section>
 
         <section id="script-section">
-            <div class="script-header">
-                <div style="font-weight:bold; color:var(--main-blue);">실시간 레슨 브리핑</div>
-                <div id="status" style="font-size:0.8rem; color:#999;">● 대기 중</div>
+            <div id="transcript-container">
+                <p style="text-align:center; color:#999; margin-top:100px;">수업이 시작되면 여기에 실시간 자막과 번역이 표시됩니다.</p>
             </div>
-            <div id="transcript-container"></div>
         </section>
     </main>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycby65f1EoCFo5PH55qMS-emeyYmF1ylEMDdDaX_iniBMmFf_hYIw9GcTZcMQVA2hEiZZ/exec";
+        // 대표님이 새로 배포하신 GAS 주소 적용
+        const GAS_URL = "https://script.google.com/macros/s/AKfycby5QOkg5aCilYM4IEaEOP3ypGTr8TfUowYSfjPmAykIFi8de6Rh3dfTUNGmR0DAsar4/exec";
         const container = document.getElementById('transcript-container');
         let lessonLog = [];
         let recognition;
@@ -81,7 +79,7 @@
 
         function startLesson() {
             const url = document.getElementById('meet-url').value;
-            const inputLangShort = document.getElementById('input-lang').value;
+            const inLang = document.getElementById('input-lang').value;
             
             if (!url.startsWith('https://meet.google.com/')) {
                 alert("정확한 미트 주소를 입력해주세요!");
@@ -92,69 +90,66 @@
 
             if (Recognition) {
                 recognition = new Recognition();
-                // 브라우저 마이크 인식 언어 매핑
-                recognition.lang = inputLangShort === 'ko' ? 'ko-KR' : (inputLangShort === 'en' ? 'en-US' : 'th-TH');
+                recognition.lang = inLang === 'ko' ? 'ko-KR' : (inLang === 'en' ? 'en-US' : 'th-TH');
                 recognition.continuous = true;
                 recognition.interimResults = false;
 
                 recognition.onresult = (event) => {
                     const speechText = event.results[event.results.length - 1][0].transcript;
                     
-                    // 1. 번역 전이라도 화면에 즉시 표시 (작동 확인용)
+                    // 1. 화면에 즉시 표시 (번역 중 알림)
                     const tempItem = document.createElement('div');
                     tempItem.className = 'script-item';
                     tempItem.style.opacity = "0.6"; 
-                    tempItem.innerHTML = `<div class="original-text">인식됨: ${speechText} (번역 중...)</div>`;
+                    tempItem.innerHTML = `<div class="original-text">${speechText}</div><div class="translated-box" style="font-size:0.8rem;">번역 중...</div>`;
                     container.appendChild(tempItem);
                     container.scrollTop = container.scrollHeight;
 
-                    // 2. 실제 번역 실행
+                    // 2. GAS 서버로 번역 요청
                     executeTranslation(speechText, tempItem);
                 };
 
                 recognition.start();
-                document.getElementById('status').innerText = "● 음성 인식 및 번역 서버 가동 중";
-                document.getElementById('status').style.color = "#34a853";
-                document.getElementById('start-btn').innerText = "수업 세션 활성화됨";
+                document.getElementById('start-btn').innerText = "레슨 기록 중...";
                 document.getElementById('start-btn').disabled = true;
+                container.innerHTML = ""; // 대기 메시지 삭제
             }
         }
 
         async function executeTranslation(text, tempItem) {
-            const source = document.getElementById('input-lang').value;
-            const target = document.getElementById('output-lang').value;
+            const src = document.getElementById('input-lang').value;
+            const tar = document.getElementById('output-lang').value;
             const time = new Date().toLocaleTimeString();
 
             try {
-                // GAS 번역 서버 호출
-                const response = await fetch(`${GAS_URL}?text=${encodeURIComponent(text)}&source=${source}&target=${target}`);
+                // 대표님의 GAS 서버 호출 (파라미터: text, source, target)
+                const response = await fetch(`${GAS_URL}?text=${encodeURIComponent(text)}&source=${src}&target=${tar}`);
                 const translatedText = await response.text();
 
-                // 3. 번역 완료 후 UI 업데이트
+                // 3. UI 업데이트
                 tempItem.style.opacity = "1";
                 tempItem.innerHTML = `
-                    <div class="timestamp">${time} [${source.toUpperCase()} → ${target.toUpperCase()}]</div>
+                    <div class="timestamp">${time} [${src.toUpperCase()} → ${tar.toUpperCase()}]</div>
                     <div class="original-text">${text}</div>
                     <div class="translated-box">🌐 ${translatedText}</div>
                 `;
                 
-                lessonLog.push({ time, source, target, original: text, translated: translatedText });
+                lessonLog.push({ time, original: text, translated: translatedText });
             } catch (e) {
-                console.error("GAS Connect Error:", e);
-                tempItem.innerHTML = `<div class="original-text" style="color:red;">번역 서버 연결 오류 (GAS 설정을 확인하세요): ${text}</div>`;
+                tempItem.innerHTML = `<div class="original-text" style="color:red;">연결 오류: ${text}</div>`;
             }
         }
 
         function downloadCSV() {
             if (lessonLog.length === 0) { alert("저장할 데이터가 없습니다."); return; }
-            let csvContent = "\uFEFF시간,발화언어,타겟언어,원문,번역문\n";
+            let csvContent = "\uFEFF시간,원문,번역문\n";
             lessonLog.forEach(row => {
-                csvContent += `"${row.time}","${row.source}","${row.target}","${row.original}","${row.translated}"\n`;
+                csvContent += `"${row.time}","${row.original}","${row.translated}"\n`;
             });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `iROOM_Lesson_${new Date().toLocaleDateString()}.csv`;
+            link.download = `iROOM_Lesson_${new Date().getTime()}.csv`;
             link.click();
         }
     </script>
