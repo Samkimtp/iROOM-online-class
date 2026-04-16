@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iROOM Online Class - CEO Prototype</title>
+    <style>
+        body { margin: 0; font-family: 'Pretendard', sans-serif; display: flex; height: 100vh; overflow: hidden; background-color: #f5f7fa; }
+        
+        /* 왼쪽: 화상회의 영역 */
+        #meet-section { flex: 7; background-color: #202124; display: flex; flex-direction: column; position: relative; }
+        #video-placeholder { flex: 1; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; }
+        .meet-controls { height: 80px; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; gap: 20px; }
+        
+        /* 오른쪽: 실시간 노트 영역 */
+        #note-section { flex: 3; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; box-shadow: -2px 0 10px rgba(0,0,0,0.05); }
+        .note-header { padding: 20px; border-bottom: 2px solid #eee; font-weight: bold; color: #1a73e8; display: flex; justify-content: space-between; }
+        #transcript-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        
+        /* 자막 아이템 스타일 */
+        .script-item { animation: fadeIn 0.5s; }
+        .original-text { font-size: 1rem; color: #333; font-weight: 500; }
+        .translated-text { font-size: 0.9rem; color: #666; margin-top: 4px; font-style: italic; }
+        .timestamp { font-size: 0.7rem; color: #999; margin-bottom: 2px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .btn { padding: 10px 20px; border-radius: 20px; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .btn-primary { background: #1a73e8; color: white; }
+    </style>
+</head>
+<body>
+
+    <section id="meet-section">
+        <div id="video-placeholder">
+            <div style="text-align: center;">
+                <p>🎬 Google Meet 수업 화면 영역</p>
+                <small>(실제 서비스 시 Meet API 또는 iframe 연동)</small>
+            </div>
+        </div>
+        <div class="meet-controls">
+            <button class="btn btn-primary" onclick="startLesson()">수업 시작 & 자막 켜기</button>
+        </div>
+    </section>
+
+    <section id="note-section">
+        <div class="note-header">
+            <span>iROOM Live Script</span>
+            <span id="status" style="font-size: 0.8rem; color: #34a853;">● 대기 중</span>
+        </div>
+        <div id="transcript-container">
+            </div>
+    </section>
+
+    <script>
+        const container = document.getElementById('transcript-container');
+        const status = document.getElementById('status');
+        
+        // 브라우저 음성 인식 API 설정 (Chrome 권장)
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (Recognition) {
+            recognition = new Recognition();
+            recognition.lang = 'ko-KR'; // 발화 언어: 한국어
+            recognition.interimResults = false;
+            recognition.continuous = true;
+
+            recognition.onresult = (event) => {
+                const speechToText = event.results[event.results.length - 1][0].transcript;
+                addTranscript(speechToText);
+            };
+        }
+
+        function startLesson() {
+            if (recognition) {
+                recognition.start();
+                status.innerText = "● 수업 진행 중 (음성 인식 중)";
+                alert("음성 인식을 시작합니다. 마이크 권한을 허용해주세요!");
+            }
+        }
+
+        function addTranscript(text) {
+            const now = new Date();
+            const timeStr = now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds();
+            
+            const item = document.createElement('div');
+            item.className = 'script-item';
+            
+            // 실시간 번역 시뮬레이션 (여기서는 간단한 예시로 처리)
+            // 실제 구현 시 Google Translate API 등을 호출합니다.
+            const translated = "Translating: " + text + "..."; 
+
+            item.innerHTML = `
+                <div class="timestamp">${timeStr}</div>
+                <div class="original-text">${text}</div>
+                <div class="translated-text">${translated}</div>
+            `;
+            
+            container.appendChild(item);
+            container.scrollTop = container.scrollHeight; // 항상 최하단으로 스크롤
+        }
+    </script>
+</body>
+</html>
