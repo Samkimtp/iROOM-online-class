@@ -5,27 +5,30 @@
     <title>iROOM - Welcome</title>
     <style>
         body { font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5; margin: 0; }
-        h1 { color: #007BFF; margin-bottom: 30px; }
-        .box-container { display: flex; gap: 20px; }
-        .mode-box { width: 200px; padding: 40px 20px; background: white; border-radius: 20px; text-align: center; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: 0.3s; text-decoration: none; color: #333; }
-        .mode-box:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        h1 { color: #007BFF; margin-bottom: 10px; }
+        p { color: #666; margin-bottom: 30px; }
+        .box-container { display: flex; gap: 25px; }
+        .mode-box { width: 220px; padding: 40px 20px; background: white; border-radius: 25px; text-align: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.05); transition: 0.3s; text-decoration: none; color: #333; }
+        .mode-box:hover { transform: translateY(-10px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
         .teacher { border-bottom: 8px solid #007BFF; }
         .student { border-bottom: 8px solid #FF4136; }
-        .icon { font-size: 3rem; margin-bottom: 15px; }
+        .icon { font-size: 3.5rem; margin-bottom: 15px; display: block; }
+        h3 { margin: 10px 0 5px; }
     </style>
 </head>
 <body>
-    <h1>iROOM : AI Music Education</h1>
+    <h1>iROOM</h1>
+    <p>AI 기반 실시간 쌍방향 음악 교육 플랫폼</p>
     <div class="box-container">
         <a href="teacher.html" class="mode-box teacher">
-            <div class="icon">🎺</div>
+            <span class="icon">🎺</span>
             <h3>선생님 모드</h3>
-            <p>Teacher Mode</p>
+            <p style="font-size:0.85rem; color:#888;">Teacher Mode</p>
         </a>
         <a href="student.html" class="mode-box student">
-            <div class="icon">🎻</div>
+            <span class="icon">🎻</span>
             <h3>학생 모드</h3>
-            <p>Student Mode</p>
+            <p style="font-size:0.85rem; color:#888;">Student Mode</p>
         </a>
     </div>
 </body>
