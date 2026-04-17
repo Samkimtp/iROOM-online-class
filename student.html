@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>iROOM Student v7.5</title>
+    <title>iROOM Student v7.7</title>
     <style>
         :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f8f9fa; }
         body { margin: 0; font-family: 'Pretendard', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
@@ -21,7 +21,7 @@
 <body>
     <div id="sidebar">
         <h2 style="color:var(--s-red); margin-top:0;">iROOM Live</h2>
-        <label style="font-size:0.8rem; color:#888;">My Language (Source)</label>
+        <label style="font-size:0.8rem; color:#888;">My Language</label>
         <select id="my-lang" style="width:100%; padding:8px; margin:8px 0 20px; border-radius:5px;">
             <option value="th">Thai (태국어)</option>
             <option value="en">English (영어)</option>
@@ -30,12 +30,12 @@
             <div>👥 Online: <span id="count-num">1</span></div>
             <div id="remote-st" style="color:#aaa; margin-top:5px;">Waiting for Teacher...</div>
         </div>
-        <button onclick="startSession()" style="margin-top:15px;">Join Lesson (Mic ON)</button>
+        <button onclick="startSession()" style="margin-top:15px;">Join Lesson</button>
     </div>
     <div id="chat-main"><div id="chat-window"></div></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyiB1CywtcqV9ns2nJ5a0vCT6q2gOHOHXFlDUV7QVq1LU_rMIww1WzS9irh9KLd8eZT/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzwyrLJ7Hcotg957hWn-rwmWzu6uwV5Wv48YtELeIbCuoe4wYx5odiNW4MjtsC2SsXH/exec";
         let lastTime = null;
         const windowDiv = document.getElementById('chat-window');
 
@@ -59,13 +59,13 @@
             };
             
             window.cb_chat = (res) => {
-                const lastS = document.querySelector('.bubble-S:last-child .trans');
-                if(lastS) lastS.innerText = "🌐 " + res.translated;
+                const bubbles = document.querySelectorAll('.bubble-S');
+                if(bubbles.length > 0) bubbles[bubbles.length-1].querySelector('.trans').innerText = "🌐 " + res.translated;
             };
 
             recog.start();
-            setInterval(sync, 1500); // 1.5초마다 선생님 메시지 확인
-            setInterval(hb, 10000);  // 10초마다 접속 상태 체크
+            setInterval(sync, 2000);
+            setInterval(hb, 10000);
             hb();
         }
 
