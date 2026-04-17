@@ -2,88 +2,92 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>iROOM Live - Teacher v7.0</title>
+    <title>iROOM Teacher v7.1</title>
     <style>
-        :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
-        body { margin: 0; font-family: 'Pretendard', sans-serif; background: var(--bg); display: flex; height: 100vh; }
-        #sidebar { width: 300px; background: #1c1e21; color: white; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; }
+        :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f8f9fa; }
+        body { margin: 0; font-family: 'Pretendard', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
+        #sidebar { width: 300px; background: #1a1a1a; color: white; padding: 25px; display: flex; flex-direction: column; }
         #chat-main { flex: 1; display: flex; flex-direction: column; background: white; }
-        #chat-window { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 75%; line-height: 1.5; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        #chat-window { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .bubble { padding: 12px 16px; border-radius: 18px; max-width: 75%; line-height: 1.4; font-size: 1rem; }
         .bubble-T { align-self: flex-end; background: var(--t-blue); color: white; border-bottom-right-radius: 2px; }
-        .bubble-S { align-self: flex-start; background: #e4e6eb; color: #050505; border-bottom-left-radius: 2px; }
-        .trans { display: block; font-size: 0.9rem; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; }
+        .bubble-S { align-self: flex-start; background: #e9ecef; color: #333; border-bottom-left-radius: 2px; }
+        .trans { display: block; font-size: 0.85rem; margin-top: 5px; opacity: 0.9; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 5px; }
         .bubble-S .trans { border-top: 1px solid rgba(0,0,0,0.1); color: var(--t-blue); font-weight: bold; }
-        #user-count { margin-top: auto; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; font-size: 0.9rem; border: 1px solid var(--t-blue); }
-        button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--t-blue); color: white; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .status-box { margin-top: auto; padding: 15px; background: #2a2a2a; border-radius: 12px; font-size: 0.85rem; }
+        button { width: 100%; padding: 15px; border-radius: 10px; border: none; background: var(--t-blue); color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="sidebar">
-        <h2 style="color:var(--t-blue);">iROOM Teacher</h2>
-        <p style="font-size:0.85rem; color:#888;">상태: <span id="st-text" style="color:#fff;">연결 대기</span></p>
-        <label style="font-size:0.8rem; color:#aaa;">학생 번역 언어</label>
-        <select id="tar-lang" style="width:100%; padding:10px; margin-top:8px; border-radius:8px; background:#2a2a2a; color:white; border:none;">
+        <h2 style="color:var(--t-blue); margin-top:0;">iROOM Live</h2>
+        <label style="font-size:0.8rem; color:#888;">학생 번역 언어</label>
+        <select id="tar-lang" style="width:100%; padding:8px; margin:8px 0 20px; border-radius:5px;">
             <option value="th">태국어 (Thai)</option>
             <option value="en">영어 (English)</option>
         </select>
-        <div id="user-count">👥 접속자: <span id="count-num">?</span>명 (상태: <span id="remote-st">-</span>)</div>
-        <button onclick="startSession()" style="margin-top:15px;">레슨 입장</button>
+        <div class="status-box">
+            <div>👥 접속: <span id="count-num">1</span>명</div>
+            <div id="remote-st" style="color:#aaa; margin-top:5px;">상대방 대기 중...</div>
+        </div>
+        <button onclick="startSession()" style="margin-top:15px;">레슨 시작</button>
     </div>
     <div id="chat-main"><div id="chat-window"></div></div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbywWXWw3bOz04ap7HRyHRrj8rXhiRSFpGJCm3o7ZTKw02lJZ2GRZLfumstwZobCj2mS/exec";
+        // 대표님의 새로운 GAS 주소를 적용했습니다.
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyiB1CywtcqV9ns2nJ5a0vCT6q2gOHOHXFlDUV7QVq1LU_rMIww1WzS9irh9KLd8eZT/exec";
         let lastTime = null;
         const windowDiv = document.getElementById('chat-window');
 
-        async function apiCall(params) {
-            const query = new URLSearchParams(params).toString();
-            try {
-                const response = await fetch(`${GAS_URL}?${query}`);
-                const text = await response.text();
-                // JSONP 콜백 함수명 제거 로직 (순수 JSON 추출)
-                const json = JSON.parse(text.substring(text.indexOf('(') + 1, text.lastIndexOf(')')));
-                return json;
-            } catch (e) { console.error("API Error:", e); return null; }
+        function callGAS(params, callbackName) {
+            const query = new URLSearchParams({...params, callback: callbackName}).toString();
+            const script = document.createElement('script');
+            script.src = `${GAS_URL}?${query}`;
+            document.body.appendChild(script);
+            document.body.removeChild(script);
         }
 
         function startSession() {
-            document.getElementById('st-text').innerText = "마이크 활성";
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Recognition) return alert("브라우저를 업데이트해주세요.");
             const recog = new Recognition();
             recog.lang = 'ko-KR';
             recog.continuous = true;
-            recog.onresult = async (e) => {
+            recog.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript;
-                const bubble = addBubble('T', text, '번역 중...');
-                const res = await apiCall({
-                    mode: 'chat', user: 'T', text: text,
-                    source: 'ko', target: document.getElementById('tar-lang').value,
-                    callback: 'callback'
-                });
-                if(res) bubble.querySelector('.trans').innerText = "🌐 " + res.translated;
+                addBubble('T', text, '번역 중...');
+                callGAS({mode: 'chat', user: 'T', text: text, source: 'ko', target: document.getElementById('tar-lang').value}, 'cb_chat');
+            };
+            window.cb_chat = (res) => {
+                const bubbles = document.querySelectorAll('.bubble-T');
+                if(bubbles.length > 0) bubbles[bubbles.length-1].querySelector('.trans').innerText = "🌐 " + res.translated;
             };
             recog.start();
             setInterval(sync, 2000);
-            setInterval(heartbeat, 10000);
-            heartbeat();
+            setInterval(hb, 10000);
+            hb();
         }
 
-        async function sync() {
-            const data = await apiCall({ mode: 'sync', callback: 'callback' });
-            if (data && data.user === 'S' && data.time !== lastTime) {
-                addBubble('S', data.original, data.translated);
-                lastTime = data.time;
-            }
+        function sync() {
+            window.cb_sync = (d) => {
+                if (d && d.user === 'S' && d.time !== lastTime) {
+                    addBubble('S', d.original, d.translated);
+                    lastTime = d.time;
+                }
+            };
+            callGAS({mode: 'sync'}, 'cb_sync');
         }
 
-        async function heartbeat() {
-            const res = await apiCall({ mode: 'heartbeat', user: 'T', callback: 'callback' });
-            if (res) {
-                document.getElementById('count-num').innerText = res.onlineCount;
-                document.getElementById('remote-st').innerText = res.otherOnline ? "학생 접속중" : "학생 부재";
-            }
+        function hb() {
+            window.cb_hb = (res) => {
+                if(res) {
+                    document.getElementById('count-num').innerText = res.onlineCount;
+                    document.getElementById('remote-st').innerText = res.otherOnline ? "✅ 학생 연결됨" : "💤 학생 부재";
+                    document.getElementById('remote-st').style.color = res.otherOnline ? "#34a853" : "#aaa";
+                }
+            };
+            callGAS({mode: 'heartbeat', user: 'T'}, 'cb_hb');
         }
 
         function addBubble(user, ori, trans) {
@@ -92,7 +96,6 @@
             div.innerHTML = `${ori} <span class="trans">${user==='T'?trans:'🌐 '+trans}</span>`;
             windowDiv.appendChild(div);
             windowDiv.scrollTop = windowDiv.scrollHeight;
-            return div;
         }
     </script>
 </body>
