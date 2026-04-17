@@ -2,25 +2,46 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>iROOM - Welcome</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iROOM - Music Education Platform</title>
     <style>
         body { font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8f9fa; margin: 0; }
-        h1 { color: #007BFF; margin-bottom: 5px; font-size: 2.5rem; }
-        p { color: #666; margin-bottom: 40px; }
+        h1 { color: #007BFF; margin-bottom: 5px; font-size: 2.5rem; letter-spacing: -1px; }
+        p { color: #666; margin-bottom: 40px; font-size: 1.1rem; }
         .box-container { display: flex; gap: 20px; }
-        .mode-box { width: 200px; padding: 40px 10px; background: white; border-radius: 20px; text-align: center; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: 0.3s; text-decoration: none; color: #333; border: 1px solid #eee; }
-        .mode-box:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
-        .teacher { border-top: 6px solid #007BFF; }
-        .student { border-top: 6px solid #FF4136; }
-        .icon { font-size: 3rem; margin-bottom: 10px; display: block; }
+        .mode-box { 
+            width: 220px; padding: 50px 20px; background: white; border-radius: 25px; 
+            text-align: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+            transition: 0.3s; text-decoration: none; color: #333; border: 1px solid #eee; 
+        }
+        .mode-box:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); border-color: #007BFF; }
+        .teacher { border-top: 8px solid #007BFF; }
+        .student { border-top: 8px solid #FF4136; }
+        .icon { font-size: 4rem; margin-bottom: 15px; display: block; }
+        h3 { margin: 10px 0; font-size: 1.4rem; }
+        .sub-txt { font-size: 0.9rem; color: #999; }
     </style>
 </head>
 <body>
     <h1>iROOM</h1>
-    <p>AI Real-time Instrumental Learning Platform</p>
+    <p>AI 기반 실시간 쌍방향 음악 교육 플랫폼</p>
+    
     <div class="box-container">
-        <a href="teacher.html" class="mode-box teacher"><span class="icon">🎺</span><h3>Teacher</h3></a>
-        <a href="student.html" class="mode-box student"><span class="icon">🎻</span><h3>Student</h3></a>
+        <a href="teacher.html" class="mode-box teacher">
+            <span class="icon">🎺</span>
+            <h3>Teacher</h3>
+            <span class="sub-txt">선생님 모드 입장</span>
+        </a>
+        
+        <a href="student.html" class="mode-box student">
+            <span class="icon">🎻</span>
+            <h3>Student</h3>
+            <span class="sub-txt">학생 모드 입장</span>
+        </a>
+    </div>
+    
+    <div style="margin-top: 50px; color: #ccc; font-size: 0.8rem;">
+        © 2026 iROOM Music EdTech. All rights reserved.
     </div>
 </body>
 </html>
