@@ -3,50 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iROOM Student v8.5</title>
+    <title>iROOM Student v8.6</title>
     <style>
         :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
         body { margin: 0; font-family: 'Pretendard', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
-        #sidebar { width: 280px; background: #1c1c1e; color: white; padding: 30px 20px; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
-        h2 { color: var(--s-red); font-size: 1.8rem; margin: 0 0 10px; letter-spacing: -1px; }
-        .desc { font-size: 0.85rem; color: #8e8e93; line-height: 1.5; margin-bottom: 30px; }
-        label { font-size: 0.75rem; color: #8e8e93; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; display: block; }
-        select { width: 100%; padding: 12px; border-radius: 12px; background: #2c2c2e; color: white; border: 1px solid #3a3a3c; font-size: 1rem; margin-bottom: 20px; outline: none; }
+        #sidebar { width: 280px; background: #1c1c1e; color: white; padding: 30px 20px; display: flex; flex-direction: column; }
+        h2 { color: var(--s-red); font-size: 1.8rem; margin: 0; }
+        .desc { font-size: 0.85rem; color: #8e8e93; margin-bottom: 30px; }
+        label { font-size: 0.75rem; color: #8e8e93; font-weight: bold; margin-bottom: 8px; display: block; }
+        select { width: 100%; padding: 12px; border-radius: 12px; background: #2c2c2e; color: white; border: none; font-size: 1rem; margin-bottom: 20px; }
         #chat-main { flex: 1; display: flex; flex-direction: column; background: #ffffff; }
-        #chat-window { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #f9f9f9; }
-        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 80%; line-height: 1.5; font-size: 1.05rem; position: relative; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .bubble-S { align-self: flex-end; background: var(--s-red); color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 12px rgba(255, 65, 54, 0.2); }
-        .bubble-T { align-self: flex-start; background: white; color: #1c1c1e; border-bottom-left-radius: 4px; border: 1px solid #e5e5ea; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        #chat-window { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 80%; line-height: 1.5; font-size: 1.05rem; }
+        .bubble-S { align-self: flex-end; background: var(--s-red); color: white; border-bottom-right-radius: 4px; }
+        .bubble-T { align-self: flex-start; background: white; color: #1c1c1e; border-bottom-left-radius: 4px; border: 1px solid #e5e5ea; }
         .trans { display: block; font-size: 0.9rem; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
-        .bubble-S .trans { border-top-color: rgba(255,255,255,0.2); color: #ffdada; }
         .bubble-T .trans { color: var(--s-red); font-weight: 600; }
-        .btn-start { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--s-red); color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: auto; transition: 0.2s; }
-        .btn-start:hover { background: #e03a31; transform: scale(1.02); }
-        .btn-active { background: #444 !important; cursor: default; }
+        .btn-start { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--s-red); color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: auto; }
     </style>
 </head>
 <body>
     <div id="sidebar">
         <h2>iROOM S</h2>
-        <p class="desc">학생 모드입니다.<br>사용할 언어를 선택하고 참여하세요.</p>
-        <label>나의 언어 (My Language)</label>
+        <p class="desc">학생 모드 (v8.6)</p>
+        <label>나의 언어</label>
         <select id="my-lang">
-            <option value="th">Thai (태국어)</option>
+            <option value="th">태국어 (Thai)</option>
             <option value="en">English (영어)</option>
             <option value="vi">Vietnamese (베트남어)</option>
         </select>
-        <button id="main-btn" class="btn-start" onclick="startSession()">레슨 참여하기</button>
+        <button id="main-btn" class="btn-start" onclick="startSession()">레슨 참여</button>
     </div>
     <div id="chat-main"><div id="chat-window"></div></div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzOxGjLQX1nZZODTLK4AuRkENvx2ShNkgJFtvaKd1RzyBy2MqGWNzyxBKZ5geRQG3fa/exec";
-        let lastTime = null;
+        let lastMsgHash = ""; 
         const windowDiv = document.getElementById('chat-window');
 
         function callGAS(params, callbackName) {
-            const query = new URLSearchParams({...params, callback: callbackName}).toString();
+            const query = new URLSearchParams({...params, callback: callbackName, _t: new Date().getTime()}).toString();
             const script = document.createElement('script');
             script.src = `${GAS_URL}?${query}`;
             document.body.appendChild(script);
@@ -55,37 +51,32 @@
 
         function startSession() {
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Recognition) return alert("Please use Chrome browser.");
-            
-            document.getElementById('main-btn').innerText = "🔴 Lesson Live";
-            document.getElementById('main-btn').classList.add('btn-active');
-
             const myLang = document.getElementById('my-lang').value;
             const recog = new Recognition();
             recog.lang = (myLang === 'th') ? 'th-TH' : (myLang === 'en' ? 'en-US' : 'vi-VN');
             recog.continuous = true;
-
             recog.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript;
                 addBubble('S', text, 'Translating...');
-                // 학생(myLang) -> 선생님(ko) 번역 요청
+                // 학생 -> 선생님(ko) 번역 요청
                 callGAS({mode: 'chat', user: 'S', text: text, source: myLang, target: 'ko'}, 'cb_chat');
             };
-            
             window.cb_chat = (res) => {
                 const bubbles = document.querySelectorAll('.bubble-S');
                 if(bubbles.length > 0) bubbles[bubbles.length-1].querySelector('.trans').innerText = "🌐 " + res.translated;
             };
-
             recog.start();
             setInterval(sync, 2000);
+            document.getElementById('main-btn').innerText = "🔴 참여 중";
         }
 
         function sync() {
             window.cb_sync = (d) => {
-                if (d && d.user === 'T' && d.time !== lastTime) {
+                const currentHash = d.original + d.time;
+                // 선생님(T)이 보낸 새 메시지이고, 이전에 보여준 적 없는 내용일 때만 추가
+                if (d && d.user === 'T' && currentHash !== lastMsgHash && d.original !== "") {
                     addBubble('T', d.original, d.translated);
-                    lastTime = d.time;
+                    lastMsgHash = currentHash;
                 }
             };
             callGAS({mode: 'sync'}, 'cb_sync');
@@ -94,7 +85,7 @@
         function addBubble(user, ori, trans) {
             const div = document.createElement('div');
             div.className = `bubble bubble-${user}`;
-            div.innerHTML = `<div>${ori}</div><div class="trans">${user==='S' ? trans : '🌐 '+trans}</div>`;
+            div.innerHTML = `<div>${ori}</div><div class="trans">${user==='S' ? '' : '🌐 '}${trans}</div>`;
             windowDiv.appendChild(div);
             windowDiv.scrollTop = windowDiv.scrollHeight;
         }
