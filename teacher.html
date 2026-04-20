@@ -2,31 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>iROOM Teacher v8.7 EN</title>
     <style>
         :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
-        #sidebar { width: 280px; background: #1c1c1e; color: white; padding: 30px 20px; display: flex; flex-direction: column; }
+        #sidebar { width: 280px; background: #1c1c1e; color: white; padding: 30px 20px; display: flex; flex-direction: column; flex-shrink: 0; }
         h2 { color: var(--t-blue); font-size: 1.8rem; margin: 0; }
         .desc { font-size: 0.85rem; color: #8e8e93; margin-bottom: 30px; }
         label { font-size: 0.75rem; color: #8e8e93; font-weight: bold; margin-bottom: 8px; display: block; }
         select { width: 100%; padding: 12px; border-radius: 12px; background: #2c2c2e; color: white; border: none; font-size: 1rem; margin-bottom: 20px; }
-        #chat-main { flex: 1; display: flex; flex-direction: column; background: #ffffff; }
+        #chat-main { flex: 1; display: flex; flex-direction: column; background: #ffffff; position: relative; }
         #chat-window { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 80%; line-height: 1.5; font-size: 1.05rem; position: relative; }
+        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 80%; line-height: 1.5; font-size: 1.05rem; }
         .bubble-T { align-self: flex-end; background: var(--t-blue); color: white; border-bottom-right-radius: 4px; }
         .bubble-S { align-self: flex-start; background: white; color: #1c1c1e; border-bottom-left-radius: 4px; border: 1px solid #e5e5ea; }
         .trans { display: block; font-size: 0.9rem; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
         .bubble-S .trans { color: var(--t-blue); font-weight: 600; }
         .btn-start { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--t-blue); color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: auto; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar { width: 100%; padding: 15px 20px; height: auto; }
+            .desc, label, select { display: none; } /* 모바일에서 공간확보를 위해 일부 생략 */
+            label[for="target-lang"], #target-lang { display: block; margin-bottom: 10px; }
+            .btn-start { margin-top: 10px; padding: 12px; }
+            h2 { font-size: 1.4rem; }
+            #chat-main { height: calc(100vh - 150px); }
+        }
     </style>
 </head>
 <body>
     <div id="sidebar">
         <h2>iROOM T</h2>
         <p class="desc">Teacher Mode (v8.7)</p>
-        <label>Student's Language</label>
+        <label for="target-lang">Student's Language</label>
         <select id="target-lang">
             <option value="en">English</option>
             <option value="th">Thai</option>
@@ -37,7 +47,7 @@
     <div id="chat-main"><div id="chat-window"></div></div>
 
     <script>
-        const GAS_URL = "YOUR_GAS_URL_HERE";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzOxGjLQX1nZZODTLK4AuRkENvx2ShNkgJFtvaKd1RzyBy2MqGWNzyxBKZ5geRQG3fa/exec";
         let startTime = new Date().getTime(); 
         let lastMsgHash = ""; 
         const windowDiv = document.getElementById('chat-window');
@@ -52,8 +62,9 @@
 
         function startSession() {
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Recognition) return alert("Speech recognition not supported in this browser.");
             const recog = new Recognition();
-            recog.lang = 'ko-KR'; // Teacher still speaks Korean
+            recog.lang = 'ko-KR';
             recog.continuous = true;
             recog.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript;
