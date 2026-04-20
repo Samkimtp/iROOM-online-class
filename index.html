@@ -1,47 +1,71 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iROOM - Music Education Platform</title>
+    <title>iROOM MAVE System - Global Gateway</title>
     <style>
-        body { font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f8f9fa; margin: 0; }
-        h1 { color: #007BFF; margin-bottom: 5px; font-size: 2.5rem; letter-spacing: -1px; }
-        p { color: #666; margin-bottom: 40px; font-size: 1.1rem; }
-        .box-container { display: flex; gap: 20px; }
-        .mode-box { 
-            width: 220px; padding: 50px 20px; background: white; border-radius: 25px; 
-            text-align: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
-            transition: 0.3s; text-decoration: none; color: #333; border: 1px solid #eee; 
+        :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #1c1c1e; }
+        body { 
+            margin: 0; 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
         }
-        .mode-box:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); border-color: #007BFF; }
-        .teacher { border-top: 8px solid #007BFF; }
-        .student { border-top: 8px solid #FF4136; }
-        .icon { font-size: 4rem; margin-bottom: 15px; display: block; }
-        h3 { margin: 10px 0; font-size: 1.4rem; }
-        .sub-txt { font-size: 0.9rem; color: #999; }
+        .container { text-align: center; max-width: 400px; width: 90%; }
+        h1 { font-size: 2.5rem; margin-bottom: 10px; letter-spacing: -1px; }
+        h1 span { color: var(--s-red); }
+        .subtitle { color: #8e8e93; margin-bottom: 40px; line-height: 1.5; }
+        
+        .mode-card {
+            background: #2c2c2e;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            text-decoration: none;
+            display: block;
+            border: 1px solid transparent;
+        }
+        .mode-card:hover { 
+            transform: translateY(-5px); 
+            background: #3a3a3c;
+        }
+        .mode-teacher:hover { border-color: var(--t-blue); }
+        .mode-student:hover { border-color: var(--s-red); }
+
+        .mode-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; color: white; }
+        .mode-desc { font-size: 0.85rem; color: #8e8e93; }
+        
+        .footer { position: absolute; bottom: 30px; font-size: 0.75rem; color: #48484a; }
     </style>
 </head>
 <body>
-    <h1>iROOM</h1>
-    <p>AI 기반 실시간 쌍방향 음악 교육 플랫폼</p>
-    
-    <div class="box-container">
-        <a href="teacher.html" class="mode-box teacher">
-            <span class="icon">🎺</span>
-            <h3>Teacher</h3>
-            <span class="sub-txt">선생님 모드 입장</span>
+
+    <div class="container">
+        <h1>iROOM <span>MAVE</span></h1>
+        <p class="subtitle">AI-Driven Music Education Platform<br>"Turning Talent into Asset"</p>
+
+        <a href="teacher.html" class="mode-card mode-teacher">
+            <div class="mode-title" style="color: var(--t-blue);">Teacher Mode</div>
+            <div class="mode-desc">Start a live lesson and manage your students.</div>
         </a>
-        
-        <a href="student.html" class="mode-box student">
-            <span class="icon">🎻</span>
-            <h3>Student</h3>
-            <span class="sub-txt">학생 모드 입장</span>
+
+        <a href="student.html" class="mode-card mode-student">
+            <div class="mode-title" style="color: var(--s-red);">Student Mode</div>
+            <div class="mode-desc">Join your masterclass and see real-time feedback.</div>
         </a>
     </div>
-    
-    <div style="margin-top: 50px; color: #ccc; font-size: 0.8rem;">
-        © 2026 iROOM Music EdTech. All rights reserved.
+
+    <div class="footer">
+        © 2026 iROOM MAVE System. All rights reserved.
     </div>
+
 </body>
 </html>
