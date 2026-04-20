@@ -36,10 +36,13 @@
     </div>
     <div id="chat-main"><div id="chat-window"></div></div>
 
-    <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzOxGjLQX1nZZODTLK4AuRkENvx2ShNkgJFtvaKd1RzyBy2MqGWNzyxBKZ5geRQG3fa/exec";
-        let lastMsgHash = ""; 
-        const windowDiv = document.getElementById('chat-window');
+<script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzOxGjLQX1nZZODTLK4AuRkENvx2ShNkgJFtvaKd1RzyBy2MqGWNzyxBKZ5geRQG3fa/exec";
+    
+    // [수정] 페이지를 여는 순간의 시간을 기록해서, 이보다 이전(과거) 대화는 무시합니다.
+    let startTime = new Date().getTime(); 
+    let lastMsgHash = ""; 
+    const windowDiv = document.getElementById('chat-window');
 
         function callGAS(params, callbackName) {
             const query = new URLSearchParams({...params, callback: callbackName, _t: new Date().getTime()}).toString();
@@ -70,17 +73,21 @@
             document.getElementById('main-btn').innerText = "🔴 참여 중";
         }
 
-        function sync() {
-            window.cb_sync = (d) => {
-                const currentHash = d.original + d.time;
-                // 선생님(T)이 보낸 새 메시지이고, 이전에 보여준 적 없는 내용일 때만 추가
-                if (d && d.user === 'T' && currentHash !== lastMsgHash && d.original !== "") {
-                    addBubble('T', d.original, d.translated);
-                    lastMsgHash = currentHash;
-                }
-            };
-            callGAS({mode: 'sync'}, 'cb_sync');
-        }
+function sync() {
+        window.cb_sync = (d) => {
+            const currentHash = d.original + d.time;
+            
+            // [수정] d.time > startTime 조건이 핵심입니다!
+if (d && d.time > startTime && currentHash !== lastMsgHash && d.original !== "") {
+    // 학생 화면에서는 가져오는 데이터(d.user)가 'T'일 때만 화면에 그리면 됩니다.
+    if (d.user === 'T') {
+        addBubble('T', d.original, d.translated);
+    }
+    lastMsgHash = currentHash;
+}
+        };
+        callGAS({mode: 'sync'}, 'cb_sync');
+    }
 
         function addBubble(user, ori, trans) {
             const div = document.createElement('div');
