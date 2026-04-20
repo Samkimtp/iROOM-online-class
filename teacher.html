@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iROOM Teacher v8.6</title>
+    <title>iROOM Teacher v8.7 EN</title>
     <style>
         :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
-        body { margin: 0; font-family: 'Pretendard', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 280px; background: #1c1c1e; color: white; padding: 30px 20px; display: flex; flex-direction: column; }
         h2 { color: var(--t-blue); font-size: 1.8rem; margin: 0; }
         .desc { font-size: 0.85rem; color: #8e8e93; margin-bottom: 30px; }
@@ -25,26 +25,23 @@
 <body>
     <div id="sidebar">
         <h2>iROOM T</h2>
-        <p class="desc">선생님 모드 (v8.6)</p>
-        <label>학생의 언어</label>
+        <p class="desc">Teacher Mode (v8.7)</p>
+        <label>Student's Language</label>
         <select id="target-lang">
-            <option value="th">태국어 (Thai)</option>
-            <option value="en">영어 (English)</option>
-            <option value="vi">베트남어 (Vietnamese)</option>
+            <option value="en">English</option>
+            <option value="th">Thai</option>
+            <option value="vi">Vietnamese</option>
         </select>
-        <button id="main-btn" class="btn-start" onclick="startSession()">레슨 시작</button>
+        <button id="main-btn" class="btn-start" onclick="startSession()">Start Lesson</button>
     </div>
-    <div id="chat-main"><div id="chat-window" id="chat-window"></div></div>
+    <div id="chat-main"><div id="chat-window"></div></div>
 
-<script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzOxGjLQX1nZZODTLK4AuRkENvx2ShNkgJFtvaKd1RzyBy2MqGWNzyxBKZ5geRQG3fa/exec";
-    
-    // [수정] 페이지를 여는 순간의 시간을 기록해서, 이보다 이전(과거) 대화는 무시합니다.
-    let startTime = new Date().getTime(); 
-    let lastMsgHash = ""; 
-    const windowDiv = document.getElementById('chat-window');
-    
-    // ... 중략 ...
+    <script>
+        const GAS_URL = "YOUR_GAS_URL_HERE";
+        let startTime = new Date().getTime(); 
+        let lastMsgHash = ""; 
+        const windowDiv = document.getElementById('chat-window');
+
         function callGAS(params, callbackName) {
             const query = new URLSearchParams({...params, callback: callbackName, _t: new Date().getTime()}).toString();
             const script = document.createElement('script');
@@ -56,12 +53,12 @@
         function startSession() {
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             const recog = new Recognition();
-            recog.lang = 'ko-KR';
+            recog.lang = 'ko-KR'; // Teacher still speaks Korean
             recog.continuous = true;
             recog.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript;
                 const tar = document.getElementById('target-lang').value;
-                addBubble('T', text, '번역 중...');
+                addBubble('T', text, 'Translating...');
                 callGAS({mode: 'chat', user: 'T', text: text, source: 'ko', target: tar}, 'cb_chat');
             };
             window.cb_chat = (res) => {
@@ -70,24 +67,21 @@
             };
             recog.start();
             setInterval(sync, 2000);
-            document.getElementById('main-btn').innerText = "🔴 레슨 중";
+            document.getElementById('main-btn').innerText = "🔴 Live Tracking";
         }
 
-function sync() {
-        window.cb_sync = (d) => {
-            const currentHash = d.original + d.time;
-            
-            // [수정] d.time > startTime 조건이 핵심입니다!
-if (d && d.time > startTime && currentHash !== lastMsgHash && d.original !== "") {
-    // 학생 화면에서는 가져오는 데이터(d.user)가 'T'일 때만 화면에 그리면 됩니다.
-    if (d.user === 'S') {
-        addBubble('S', d.original, d.translated);
-    }
-    lastMsgHash = currentHash;
-}
-        };
-        callGAS({mode: 'sync'}, 'cb_sync');
-    }
+        function sync() {
+            window.cb_sync = (d) => {
+                const currentHash = d.original + d.time;
+                if (d && d.time > startTime && currentHash !== lastMsgHash && d.original !== "") {
+                    if (d.user === 'S') {
+                        addBubble('S', d.original, d.translated);
+                    }
+                    lastMsgHash = currentHash;
+                }
+            };
+            callGAS({mode: 'sync'}, 'cb_sync');
+        }
 
         function addBubble(user, ori, trans) {
             const div = document.createElement('div');
