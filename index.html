@@ -2,70 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>iROOM MAVE System - Global Gateway</title>
     <style>
         :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #1c1c1e; }
         body { 
-            margin: 0; 
-            font-family: 'Inter', -apple-system, sans-serif; 
-            background: var(--bg); 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
+            margin: 0; font-family: 'Inter', -apple-system, sans-serif; 
+            background: var(--bg); color: white; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            min-height: 100vh; padding: 20px; box-sizing: border-box;
         }
-        .container { text-align: center; max-width: 400px; width: 90%; }
+        .container { text-align: center; max-width: 400px; width: 100%; }
         h1 { font-size: 2.5rem; margin-bottom: 10px; letter-spacing: -1px; }
         h1 span { color: var(--s-red); }
-        .subtitle { color: #8e8e93; margin-bottom: 40px; line-height: 1.5; }
-        
+        .subtitle { color: #8e8e93; margin-bottom: 40px; line-height: 1.5; font-size: 0.95rem; }
         .mode-card {
-            background: #2c2c2e;
-            padding: 25px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-            text-decoration: none;
-            display: block;
-            border: 1px solid transparent;
+            background: #2c2c2e; padding: 25px; border-radius: 20px; margin-bottom: 20px;
+            cursor: pointer; transition: transform 0.2s, background 0.2s;
+            text-decoration: none; display: block; border: 1px solid transparent;
         }
-        .mode-card:hover { 
-            transform: translateY(-5px); 
-            background: #3a3a3c;
-        }
+        .mode-card:hover { transform: translateY(-5px); background: #3a3a3c; }
         .mode-teacher:hover { border-color: var(--t-blue); }
         .mode-student:hover { border-color: var(--s-red); }
-
         .mode-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; color: white; }
         .mode-desc { font-size: 0.85rem; color: #8e8e93; }
-        
-        .footer { position: absolute; bottom: 30px; font-size: 0.75rem; color: #48484a; }
+        .footer { margin-top: 20px; font-size: 0.75rem; color: #48484a; }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>iROOM <span>MAVE</span></h1>
         <p class="subtitle">AI-Driven Music Education Platform<br>"Turning Talent into Asset"</p>
-
         <a href="teacher.html" class="mode-card mode-teacher">
             <div class="mode-title" style="color: var(--t-blue);">Teacher Mode</div>
             <div class="mode-desc">Start a live lesson and manage your students.</div>
         </a>
-
         <a href="student.html" class="mode-card mode-student">
             <div class="mode-title" style="color: var(--s-red);">Student Mode</div>
             <div class="mode-desc">Join your masterclass and see real-time feedback.</div>
         </a>
+        <div class="footer">© 2026 iROOM MAVE System. All rights reserved.</div>
     </div>
-
-    <div class="footer">
-        © 2026 iROOM MAVE System. All rights reserved.
-    </div>
-
 </body>
 </html>
