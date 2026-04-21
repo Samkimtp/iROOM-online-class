@@ -3,40 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iROOM Chat - Teacher v8.8</title>
+    <title>iROOM Chat - Teacher v8.9</title>
     <style>
-        :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
+        :root { --t-blue: #007BFF; --bg: #f0f2f5; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 280px; background: #1c1c1e; color: white; padding: 30px 20px; display: flex; flex-direction: column; flex-shrink: 0; }
         h2 { color: var(--t-blue); font-size: 1.8rem; margin: 0; }
         .desc { font-size: 0.85rem; color: #8e8e93; margin-bottom: 30px; }
-        label { font-size: 0.75rem; color: #8e8e93; font-weight: bold; margin-bottom: 8px; display: block; }
         select { width: 100%; padding: 12px; border-radius: 12px; background: #2c2c2e; color: white; border: none; font-size: 1rem; margin-bottom: 20px; }
-        #chat-main { flex: 1; display: flex; flex-direction: column; background: #ffffff; position: relative; }
+        #chat-main { flex: 1; display: flex; flex-direction: column; background: #ffffff; }
         #chat-window { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 80%; line-height: 1.5; font-size: 1.05rem; }
+        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 85%; line-height: 1.5; font-size: 1.05rem; }
         .bubble-T { align-self: flex-end; background: var(--t-blue); color: white; border-bottom-right-radius: 4px; }
         .bubble-S { align-self: flex-start; background: white; color: #1c1c1e; border-bottom-left-radius: 4px; border: 1px solid #e5e5ea; }
         .trans { display: block; font-size: 0.9rem; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
-        .bubble-S .trans { color: var(--t-blue); font-weight: 600; }
-        .btn-start { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--t-blue); color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: auto; }
-
-        @media (max-width: 768px) {
-            body { flex-direction: column; }
-            #sidebar { width: 100%; padding: 15px 20px; height: auto; }
-            .desc, label { display: none; }
-            label[for="target-lang"], #target-lang { display: block; margin-bottom: 10px; }
-            .btn-start { margin-top: 10px; padding: 12px; }
-            h2 { font-size: 1.4rem; }
-            #chat-main { height: calc(100vh - 160px); }
-        }
+        .btn-start { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--t-blue); color: white; font-weight: bold; cursor: pointer; margin-top: auto; }
+        @media (max-width: 768px) { body { flex-direction: column; } #sidebar { width: 100%; height: auto; padding: 15px; } .desc { display: none; } #chat-main { height: calc(100vh - 160px); } }
     </style>
 </head>
 <body>
     <div id="sidebar">
         <h2>iROOM Chat</h2>
-        <p class="desc">Teacher Mode (v8.8)</p>
-        <label for="target-lang">Student's Language</label>
+        <p class="desc">Teacher Mode (v8.9)</p>
         <select id="target-lang">
             <option value="en">English</option>
             <option value="th">Thai</option>
@@ -49,20 +37,22 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzOxGjLQX1nZZODTLK4AuRkENvx2ShNkgJFtvaKd1RzyBy2MqGWNzyxBKZ5geRQG3fa/exec";
         let startTime = new Date().getTime(); 
-        let lastMsgHash = ""; 
+        let lastMsgHash = "";
         const windowDiv = document.getElementById('chat-window');
 
         function callGAS(params, callbackName) {
-            const query = new URLSearchParams({...params, callback: callbackName, _t: new Date().getTime()}).toString();
+            const query = new URLSearchParams(params);
+            query.append('callback', callbackName);
+            query.append('_t', new Date().getTime());
             const script = document.createElement('script');
-            script.src = `${GAS_URL}?${query}`;
-            document.body.appendChild(script);
-            document.body.removeChild(script);
+            script.src = `${GAS_URL}?${query.toString()}`;
+            document.head.appendChild(script);
+            document.head.removeChild(script);
         }
 
         function startSession() {
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Recognition) return alert("Speech recognition not supported.");
+            if (!Recognition) return alert("Browser not supported.");
             const recog = new Recognition();
             recog.lang = 'ko-KR';
             recog.continuous = true;
@@ -71,13 +61,17 @@
                 const text = e.results[e.results.length - 1][0].transcript;
                 const tar = document.getElementById('target-lang').value;
                 addBubble('T', text, 'Translating...');
+                // 파라미터 명칭 재점검 (mode, user, text, source, target)
                 callGAS({mode: 'chat', user: 'T', text: text, source: 'ko', target: tar}, 'cb_chat');
             };
 
-            // 마이크 유지 핵심 로직: 세션 종료 시 즉시 재시작
-            recog.onend = () => {
-                console.log("Mic restarted for continuous iROOM Chat.");
-                recog.start();
+            recog.onend = () => { recog.start(); }; // 무한 유지
+
+            window.cb_chat = (res) => {
+                const bubbles = document.querySelectorAll('.bubble-T');
+                if(bubbles.length > 0 && res.translated) {
+                    bubbles[bubbles.length-1].querySelector('.trans').innerText = "🌐 " + res.translated;
+                }
             };
 
             recog.start();
@@ -87,12 +81,9 @@
 
         function sync() {
             window.cb_sync = (d) => {
-                const currentHash = d.original + d.time;
-                if (d && d.time > startTime && currentHash !== lastMsgHash && d.original !== "") {
-                    if (d.user === 'S') {
-                        addBubble('S', d.original, d.translated);
-                    }
-                    lastMsgHash = currentHash;
+                if (d && d.time > startTime && (d.original + d.time) !== lastMsgHash && d.original !== "") {
+                    if (d.user === 'S') addBubble('S', d.original, d.translated);
+                    lastMsgHash = d.original + d.time;
                 }
             };
             callGAS({mode: 'sync'}, 'cb_sync');
@@ -101,7 +92,7 @@
         function addBubble(user, ori, trans) {
             const div = document.createElement('div');
             div.className = `bubble bubble-${user}`;
-            div.innerHTML = `<div>${ori}</div><div class="trans">${user==='T' ? '' : '🌐 '}${trans}</div>`;
+            div.innerHTML = `<div>${ori}</div><div class="trans">${trans}</div>`;
             windowDiv.appendChild(div);
             windowDiv.scrollTop = windowDiv.scrollHeight;
         }
