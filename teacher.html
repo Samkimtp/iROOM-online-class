@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iROOM Teacher v8.7 EN</title>
+    <title>iROOM Chat - Teacher v8.8</title>
     <style>
         :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
@@ -24,25 +24,25 @@
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #sidebar { width: 100%; padding: 15px 20px; height: auto; }
-            .desc, label, select { display: none; } /* 모바일에서 공간확보를 위해 일부 생략 */
+            .desc, label { display: none; }
             label[for="target-lang"], #target-lang { display: block; margin-bottom: 10px; }
             .btn-start { margin-top: 10px; padding: 12px; }
             h2 { font-size: 1.4rem; }
-            #chat-main { height: calc(100vh - 150px); }
+            #chat-main { height: calc(100vh - 160px); }
         }
     </style>
 </head>
 <body>
     <div id="sidebar">
-        <h2>iROOM T</h2>
-        <p class="desc">Teacher Mode (v8.7)</p>
+        <h2>iROOM Chat</h2>
+        <p class="desc">Teacher Mode (v8.8)</p>
         <label for="target-lang">Student's Language</label>
         <select id="target-lang">
             <option value="en">English</option>
             <option value="th">Thai</option>
             <option value="vi">Vietnamese</option>
         </select>
-        <button id="main-btn" class="btn-start" onclick="startSession()">Start Lesson</button>
+        <button id="main-btn" class="btn-start" onclick="startSession()">Start iROOM Chat</button>
     </div>
     <div id="chat-main"><div id="chat-window"></div></div>
 
@@ -62,23 +62,27 @@
 
         function startSession() {
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Recognition) return alert("Speech recognition not supported in this browser.");
+            if (!Recognition) return alert("Speech recognition not supported.");
             const recog = new Recognition();
             recog.lang = 'ko-KR';
             recog.continuous = true;
+
             recog.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript;
                 const tar = document.getElementById('target-lang').value;
                 addBubble('T', text, 'Translating...');
                 callGAS({mode: 'chat', user: 'T', text: text, source: 'ko', target: tar}, 'cb_chat');
             };
-            window.cb_chat = (res) => {
-                const bubbles = document.querySelectorAll('.bubble-T');
-                if(bubbles.length > 0) bubbles[bubbles.length-1].querySelector('.trans').innerText = "🌐 " + res.translated;
+
+            // 마이크 유지 핵심 로직: 세션 종료 시 즉시 재시작
+            recog.onend = () => {
+                console.log("Mic restarted for continuous iROOM Chat.");
+                recog.start();
             };
+
             recog.start();
             setInterval(sync, 2000);
-            document.getElementById('main-btn').innerText = "🔴 Live Tracking";
+            document.getElementById('main-btn').innerText = "🔴 iROOM Chat LIVE";
         }
 
         function sync() {
