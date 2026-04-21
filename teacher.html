@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iROOM Chat - Teacher v8.9</title>
+    <title>iROOM Chat - Teacher v9.0</title>
     <style>
         :root { --t-blue: #007BFF; --bg: #f0f2f5; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
@@ -24,7 +24,7 @@
 <body>
     <div id="sidebar">
         <h2>iROOM Chat</h2>
-        <p class="desc">Teacher Mode (v8.9)</p>
+        <p class="desc">Teacher Mode (v9.0)</p>
         <select id="target-lang">
             <option value="en">English</option>
             <option value="th">Thai</option>
@@ -39,6 +39,24 @@
         let startTime = new Date().getTime(); 
         let lastMsgHash = "";
         const windowDiv = document.getElementById('chat-window');
+
+        // 전역 콜백 함수: 번역 결과를 받아 화면에 업데이트
+        window.cb_chat = (res) => {
+            const bubbles = document.querySelectorAll('.bubble-T');
+            if(bubbles.length > 0 && res.translated) {
+                const lastBubbleTrans = bubbles[bubbles.length-1].querySelector('.trans');
+                lastBubbleTrans.innerText = "🌐 " + res.translated;
+            }
+        };
+
+        // 전역 콜백 함수: 상대방 메시지 동기화
+        window.cb_sync = (d) => {
+            const currentHash = d.original + d.time;
+            if (d && d.time > startTime && currentHash !== lastMsgHash && d.original !== "") {
+                if (d.user === 'S') addBubble('S', d.original, d.translated);
+                lastMsgHash = currentHash;
+            }
+        };
 
         function callGAS(params, callbackName) {
             const query = new URLSearchParams(params);
@@ -61,32 +79,14 @@
                 const text = e.results[e.results.length - 1][0].transcript;
                 const tar = document.getElementById('target-lang').value;
                 addBubble('T', text, 'Translating...');
-                // 파라미터 명칭 재점검 (mode, user, text, source, target)
                 callGAS({mode: 'chat', user: 'T', text: text, source: 'ko', target: tar}, 'cb_chat');
             };
 
             recog.onend = () => { recog.start(); }; // 무한 유지
 
-            window.cb_chat = (res) => {
-                const bubbles = document.querySelectorAll('.bubble-T');
-                if(bubbles.length > 0 && res.translated) {
-                    bubbles[bubbles.length-1].querySelector('.trans').innerText = "🌐 " + res.translated;
-                }
-            };
-
             recog.start();
-            setInterval(sync, 2000);
+            setInterval(() => { callGAS({mode: 'sync'}, 'cb_sync'); }, 2000);
             document.getElementById('main-btn').innerText = "🔴 iROOM Chat LIVE";
-        }
-
-        function sync() {
-            window.cb_sync = (d) => {
-                if (d && d.time > startTime && (d.original + d.time) !== lastMsgHash && d.original !== "") {
-                    if (d.user === 'S') addBubble('S', d.original, d.translated);
-                    lastMsgHash = d.original + d.time;
-                }
-            };
-            callGAS({mode: 'sync'}, 'cb_sync');
         }
 
         function addBubble(user, ori, trans) {
