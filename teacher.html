@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iROOM Chat - Teacher v9.0</title>
+    <title>iROOM Chat - Teacher v9.1</title>
     <style>
         :root { --t-blue: #007BFF; --bg: #f0f2f5; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
@@ -13,10 +13,10 @@
         select { width: 100%; padding: 12px; border-radius: 12px; background: #2c2c2e; color: white; border: none; font-size: 1rem; margin-bottom: 20px; }
         #chat-main { flex: 1; display: flex; flex-direction: column; background: #ffffff; }
         #chat-window { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 85%; line-height: 1.5; font-size: 1.05rem; }
+        .bubble { padding: 14px 18px; border-radius: 20px; max-width: 85%; line-height: 1.5; font-size: 1.05rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .bubble-T { align-self: flex-end; background: var(--t-blue); color: white; border-bottom-right-radius: 4px; }
         .bubble-S { align-self: flex-start; background: white; color: #1c1c1e; border-bottom-left-radius: 4px; border: 1px solid #e5e5ea; }
-        .trans { display: block; font-size: 0.9rem; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
+        .trans { display: block; font-size: 0.9rem; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); color: inherit; opacity: 0.9; }
         .btn-start { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--t-blue); color: white; font-weight: bold; cursor: pointer; margin-top: auto; }
         @media (max-width: 768px) { body { flex-direction: column; } #sidebar { width: 100%; height: auto; padding: 15px; } .desc { display: none; } #chat-main { height: calc(100vh - 160px); } }
     </style>
@@ -24,7 +24,7 @@
 <body>
     <div id="sidebar">
         <h2>iROOM Chat</h2>
-        <p class="desc">Teacher Mode (v9.0)</p>
+        <p class="desc">Teacher Mode (v9.1)</p>
         <select id="target-lang">
             <option value="en">English</option>
             <option value="th">Thai</option>
@@ -40,59 +40,74 @@
         let lastMsgHash = "";
         const windowDiv = document.getElementById('chat-window');
 
-        // 전역 콜백 함수: 번역 결과를 받아 화면에 업데이트
-        window.cb_chat = (res) => {
+        // [핵심 수정] 번역 결과 수신 전역 함수
+        window.cb_chat = function(res) {
+            console.log("Translation Received:", res);
             const bubbles = document.querySelectorAll('.bubble-T');
-            if(bubbles.length > 0 && res.translated) {
-                const lastBubbleTrans = bubbles[bubbles.length-1].querySelector('.trans');
-                lastBubbleTrans.innerText = "🌐 " + res.translated;
+            if(bubbles.length > 0 && res && res.translated) {
+                // 'Translating...' 문구가 포함된 마지막 내 말풍선을 찾아 업데이트
+                const lastTransArea = bubbles[bubbles.length-1].querySelector('.trans');
+                if (lastTransArea) {
+                    lastTransArea.innerText = "🌐 " + res.translated;
+                }
             }
         };
 
-        // 전역 콜백 함수: 상대방 메시지 동기화
-        window.cb_sync = (d) => {
+        // [핵심 수정] 상대방 메시지 동기화 전역 함수
+        window.cb_sync = function(d) {
+            if (!d || !d.original) return;
             const currentHash = d.original + d.time;
-            if (d && d.time > startTime && currentHash !== lastMsgHash && d.original !== "") {
-                if (d.user === 'S') addBubble('S', d.original, d.translated);
+            if (d.time > startTime && currentHash !== lastMsgHash) {
+                if (d.user === 'S') {
+                    addBubble('S', d.original, d.translated);
+                }
                 lastMsgHash = currentHash;
             }
         };
 
+        // [핵심 수정] 통신 함수 안정화
         function callGAS(params, callbackName) {
             const query = new URLSearchParams(params);
             query.append('callback', callbackName);
             query.append('_t', new Date().getTime());
+            
             const script = document.createElement('script');
             script.src = `${GAS_URL}?${query.toString()}`;
+            // 스크립트 실행 후 자동 삭제 (시간차를 둠)
+            script.onload = () => { document.head.removeChild(script); };
+            script.onerror = () => { console.error("GAS Connection Failed"); };
             document.head.appendChild(script);
-            document.head.removeChild(script);
         }
 
         function startSession() {
             const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Recognition) return alert("Browser not supported.");
+            if (!Recognition) return alert("Chrome is required for iROOM Chat.");
+            
             const recog = new Recognition();
             recog.lang = 'ko-KR';
             recog.continuous = true;
+            recog.interimResults = false;
 
             recog.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript;
                 const tar = document.getElementById('target-lang').value;
+                console.log("Speaking:", text);
                 addBubble('T', text, 'Translating...');
                 callGAS({mode: 'chat', user: 'T', text: text, source: 'ko', target: tar}, 'cb_chat');
             };
 
-            recog.onend = () => { recog.start(); }; // 무한 유지
+            recog.onend = () => { recog.start(); }; 
 
             recog.start();
             setInterval(() => { callGAS({mode: 'sync'}, 'cb_sync'); }, 2000);
             document.getElementById('main-btn').innerText = "🔴 iROOM Chat LIVE";
+            document.getElementById('main-btn').disabled = true; // 중복 실행 방지
         }
 
         function addBubble(user, ori, trans) {
             const div = document.createElement('div');
             div.className = `bubble bubble-${user}`;
-            div.innerHTML = `<div>${ori}</div><div class="trans">${trans}</div>`;
+            div.innerHTML = `<div>${ori}</div><div class="trans">${trans === 'Translating...' ? trans : '🌐 ' + trans}</div>`;
             windowDiv.appendChild(div);
             windowDiv.scrollTop = windowDiv.scrollHeight;
         }
