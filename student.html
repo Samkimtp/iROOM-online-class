@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iROOM Student v8.7 EN</title>
+    <title>iROOM Chat - Student v8.8</title>
     <style>
+        /* CSS는 Teacher와 거의 동일, 학생 포인트 컬러만 Red로 유지 */
         :root { --t-blue: #007BFF; --s-red: #FF4136; --bg: #f0f2f5; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
         #sidebar { width: 280px; background: #1c1c1e; color: white; padding: 30px 20px; display: flex; flex-direction: column; flex-shrink: 0; }
@@ -24,25 +25,25 @@
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #sidebar { width: 100%; padding: 15px 20px; height: auto; }
-            .desc, label, select { display: none; }
+            .desc, label { display: none; }
             label[for="my-lang"], #my-lang { display: block; margin-bottom: 10px; }
             .btn-start { margin-top: 10px; padding: 12px; }
             h2 { font-size: 1.4rem; }
-            #chat-main { height: calc(100vh - 150px); }
+            #chat-main { height: calc(100vh - 160px); }
         }
     </style>
 </head>
 <body>
     <div id="sidebar">
-        <h2>iROOM S</h2>
-        <p class="desc">Student Mode (v8.7)</p>
+        <h2>iROOM Chat</h2>
+        <p class="desc">Student Mode (v8.8)</p>
         <label for="my-lang">My Language</label>
         <select id="my-lang">
             <option value="en">English</option>
             <option value="th">Thai</option>
             <option value="vi">Vietnamese</option>
         </select>
-        <button id="main-btn" class="btn-start" onclick="startSession()">Join Lesson</button>
+        <button id="main-btn" class="btn-start" onclick="startSession()">Join iROOM Chat</button>
     </div>
     <div id="chat-main"><div id="chat-window"></div></div>
 
@@ -67,15 +68,19 @@
             const recog = new Recognition();
             recog.lang = (myLang === 'th') ? 'th-TH' : (myLang === 'en' ? 'en-US' : 'vi-VN');
             recog.continuous = true;
+
             recog.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript;
                 addBubble('S', text, 'Translating...');
                 callGAS({mode: 'chat', user: 'S', text: text, source: myLang, target: 'ko'}, 'cb_chat');
             };
-            window.cb_chat = (res) => {
-                const bubbles = document.querySelectorAll('.bubble-S');
-                if(bubbles.length > 0) bubbles[bubbles.length-1].querySelector('.trans').innerText = "🌐 " + res.translated;
+
+            // 학생용 마이크도 종료 시 즉시 재시작
+            recog.onend = () => {
+                console.log("Student Mic restarted.");
+                recog.start();
             };
+
             recog.start();
             setInterval(sync, 2000);
             document.getElementById('main-btn').innerText = "🔴 Participating";
